@@ -23,25 +23,39 @@ a { color: var(--accent-deep); }
 .crumbs a { text-decoration: none; padding: 6px 14px; border-radius: 999px; background: var(--cream); border: 2px solid var(--cocoa); }
 .crumbs a:hover { background: var(--pink-soft); }
 
+/* floating hearts/sparkles — a light kawaii atmosphere behind the hero */
+.deco-sky { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 0; }
+.deco-sky svg { position: absolute; animation: hubfloat 6s ease-in-out infinite; opacity: .8; }
+@keyframes hubfloat { 0%, 100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-16px) rotate(8deg); } }
+@keyframes cardbob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+@keyframes sparkle { 0%, 100% { opacity: .5; scale: .85; } 50% { opacity: 1; scale: 1.1; } }
+
 /* hub */
-.hub-hero { text-align: center; padding: 56px 20px 20px; }
+.hub-hero { position: relative; text-align: center; padding: 56px 20px 20px; }
 .hub-hero .eyebrow { display: inline-block; margin-bottom: 10px; padding: 6px 18px; border-radius: 999px; background: #fff; border: 3px solid var(--cocoa); font-weight: 800; letter-spacing: .05em; text-transform: uppercase; font-size: .8rem; color: var(--pink-deep); rotate: -2deg; }
-.hub-hero h1 { margin: 0 0 8px; font: 400 clamp(2.2rem, 6vw, 3.6rem)/1.05 var(--display); color: var(--pink-deep); text-wrap: balance; }
-.hub-hero p { margin: 0 auto; max-width: 46ch; font-weight: 700; color: var(--ink-soft); }
-.tagline { display: inline-flex; align-items: center; gap: 8px; margin-top: 18px; padding: 8px 20px; border-radius: 999px; background: var(--mint-soft); border: 2px solid var(--mint-deep); font-weight: 800; font-size: .85rem; color: var(--mint-deep); }
+.hub-hero h1 { position: relative; margin: 0 0 8px; font: 400 clamp(2.2rem, 6vw, 3.6rem)/1.05 var(--display); color: var(--pink-deep); text-wrap: balance; -webkit-text-stroke: 8px #fff; paint-order: stroke fill; }
+.hub-hero p { position: relative; margin: 0 auto; max-width: 46ch; font-weight: 700; color: var(--ink-soft); }
+.tagline { position: relative; display: inline-flex; align-items: center; gap: 8px; margin-top: 18px; padding: 8px 20px; border-radius: 999px; background: var(--mint-soft); border: 2px solid var(--mint-deep); font-weight: 800; font-size: .85rem; color: var(--mint-deep); animation: cardbob 3s ease-in-out infinite; }
 
 .group-title { margin: 10px 0 4px; font: 400 clamp(1.5rem, 4vw, 2.1rem)/1.1 var(--display); color: var(--pink-deep); padding-top: 30px; border-top: 3px dashed var(--pink-soft); }
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 22px; padding: 30px 0 70px; }
-.pcard { display: block; text-decoration: none; color: inherit; border-radius: 26px; border: 4px solid #fff; outline: 3px solid var(--cocoa); background: radial-gradient(circle at 50% 30%, #fff 0 20%, var(--tone, var(--pink)) 78%); padding: 18px 16px 20px; text-align: center; box-shadow: 0 8px 0 rgba(122, 75, 69, .16); transition: transform .2s; }
-.pcard:hover { transform: translateY(-6px) rotate(-1deg); }
+.pcard { position: relative; display: block; text-decoration: none; color: inherit; border-radius: 26px; border: 4px solid #fff; outline: 3px solid var(--cocoa); background: radial-gradient(circle at 50% 30%, #fff 0 20%, var(--tone, var(--pink)) 78%); padding: 18px 16px 20px; text-align: center; box-shadow: 0 8px 0 rgba(122, 75, 69, .16); transition: transform .25s, box-shadow .25s; }
+.pcard:hover { transform: translateY(-8px) rotate(-1.5deg) scale(1.03); box-shadow: 0 14px 0 rgba(122, 75, 69, .18); }
 .pcard.simple { cursor: default; }
-.pcard.simple:hover { transform: translateY(-3px); }
+.pcard.simple:hover { transform: translateY(-5px) scale(1.02); }
+.pcard .sparkle { position: absolute; top: 10px; right: 14px; width: 20px; height: 20px; fill: #fff; filter: drop-shadow(0 0 4px rgba(255,255,255,.8)); animation: sparkle 2.4s ease-in-out infinite; pointer-events: none; }
 .pcard .vibe { display: block; margin-top: 8px; font-size: .8rem; font-style: italic; color: var(--ink-soft); text-transform: capitalize; }
 .group-sub { margin: -6px 0 18px; color: var(--ink-soft); font-weight: 700; }
 .pcard .art { height: 150px; overflow: hidden; display: grid; place-items: center; }
-.pcard .art img { width: 85%; height: 85%; object-fit: contain; filter: drop-shadow(0 6px 0 rgba(122, 75, 69, .16)); }
+.pcard .art img { width: 85%; height: 85%; object-fit: contain; filter: drop-shadow(0 6px 0 rgba(122, 75, 69, .16)); animation: cardbob 3.6s ease-in-out infinite; }
+.pcard:hover .art img { animation-duration: 1s; }
 .pcard .nm { display: block; position: relative; z-index: 1; margin-top: 10px; font: 400 1.2rem/1.15 var(--display); -webkit-text-stroke: 5px #fff; paint-order: stroke fill; }
 .pcard .role { display: inline-block; position: relative; z-index: 1; margin-top: 6px; padding: 3px 14px; border-radius: 999px; background: #fff; border: 2px solid var(--cocoa); font: 800 .78rem/1.4 var(--body); }
+.share { display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; margin-top: 12px; padding: 9px 10px; border-radius: 999px; border: 2px solid var(--cocoa); background: #fff; color: var(--ink); font: 800 .8rem/1 var(--body); cursor: pointer; transition: transform .15s, background .15s; }
+.share:hover { transform: translateY(-2px); background: var(--tone-soft, var(--pink-soft)); }
+.share:active { transform: translateY(1px); }
+.share svg { width: 16px; height: 16px; flex: none; }
+.share.done { background: var(--mint); border-color: var(--mint-deep); }
 
 /* character page hero */
 .phero { padding: 40px 0 10px; }

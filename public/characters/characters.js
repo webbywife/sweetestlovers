@@ -212,3 +212,97 @@
     }
   });
 })();
+
+/* ---------- hub "Share" buttons: one tap makes + downloads a quote card for characters
+   that don't have a full profile page (image + name + category + personality, no quote) ---------- */
+(() => {
+  'use strict';
+  const buttons = [...document.querySelectorAll('.share')];
+  if (!buttons.length) return;
+
+  function loadImg(src) {
+    return new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = src; });
+  }
+  function roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath(); ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+  }
+  function wrapLines(ctx, text, maxWidth) {
+    const words = text.split(' '); const lines = []; let line = '';
+    for (const w of words) {
+      const test = line ? line + ' ' + w : w;
+      if (ctx.measureText(test).width > maxWidth && line) { lines.push(line); line = w; } else line = test;
+    }
+    if (line) lines.push(line);
+    return lines;
+  }
+  async function drawSweetheartCard(d) {
+    const W = 1080, H = 1080;
+    const canvas = document.createElement('canvas'); canvas.width = W; canvas.height = H;
+    const ctx = canvas.getContext('2d');
+    const grad = ctx.createLinearGradient(0, 0, W, H);
+    grad.addColorStop(0, '#FFF6EA'); grad.addColorStop(.55, d.tone + '55'); grad.addColorStop(1, d.tone);
+    ctx.fillStyle = grad; ctx.fillRect(0, 0, W, H);
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#fff'; roundRect(ctx, W / 2 - 300, 34, 600, 74, 37); ctx.fill();
+    ctx.strokeStyle = '#7A4B45'; ctx.lineWidth = 5; roundRect(ctx, W / 2 - 300, 34, 600, 74, 37); ctx.stroke();
+    ctx.fillStyle = '#7A4B45'; ctx.font = '700 30px Nunito, sans-serif'; ctx.fillText('🍪 SUGAR VALLEY', W / 2, 72, 560);
+    ctx.font = '800 17px Nunito, sans-serif'; ctx.fillStyle = '#B4557F';
+    ctx.fillText('Your Daily Dose of Love & Sweetness', W / 2, 96, 560);
+    try {
+      const img = await loadImg(d.img);
+      const maxW = 620, maxH = 520;
+      const scale = Math.min(maxW / img.width, maxH / img.height);
+      const iw = img.width * scale, ih = img.height * scale;
+      ctx.drawImage(img, W / 2 - iw / 2, 168, iw, ih);
+    } catch (e) { /* image unreachable from this origin; card still renders without it */ }
+    ctx.font = '800 26px Nunito, sans-serif';
+    const pillText = d.category.toUpperCase();
+    const pillW = ctx.measureText(pillText).width + 64;
+    roundRect(ctx, W / 2 - pillW / 2, 630, pillW, 52, 26); ctx.fillStyle = '#7A4B45'; ctx.fill();
+    ctx.fillStyle = '#fff'; ctx.fillText(pillText, W / 2, 666);
+    ctx.font = '400 60px "Bagel Fat One", cursive'; ctx.fillStyle = '#4A2740';
+    ctx.fillText(d.name, W / 2, 750, 900);
+    ctx.font = '700 34px Nunito, sans-serif';
+    const lines = wrapLines(ctx, d.vibe, 820);
+    const lineH = 44; const boxH = 60 + lines.length * lineH + 30; const boxY = 790;
+    ctx.fillStyle = '#fff'; roundRect(ctx, 110, boxY, 860, boxH, 32); ctx.fill();
+    ctx.strokeStyle = '#7A4B45'; ctx.lineWidth = 5; roundRect(ctx, 110, boxY, 860, boxH, 32); ctx.stroke();
+    ctx.fillStyle = '#7A5570'; ctx.font = '700 italic 32px Nunito, sans-serif';
+    lines.forEach((l, i) => ctx.fillText(l, W / 2, boxY + 54 + i * lineH, 820));
+    ctx.font = '700 22px Nunito, sans-serif'; ctx.fillStyle = '#7A4B45';
+    ctx.fillText('#TheSweetestBakeOff #SugarValley', W / 2, H - 34, 900);
+    return canvas;
+  }
+
+  buttons.forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const card = btn.closest('.pcard');
+      const d = {
+        name: card.dataset.name, category: card.dataset.category, vibe: card.dataset.vibe,
+        img: card.querySelector('.art img').getAttribute('src'), tone: card.style.getPropertyValue('--tone').trim() || '#FFB3C7'
+      };
+      const caption = `Meet ${d.name} — ${d.vibe}. 🍪 One of Sugar Valley's sweethearts! #SugarValley #TheSweetestBakeOff`;
+      btn.classList.add('busy'); btn.querySelector('.txt').textContent = 'Making…';
+      try {
+        const canvas = await drawSweetheartCard(d);
+        canvas.toBlob(async blob => {
+          const filename = `${card.dataset.slug}-sugar-valley.png`;
+          try { await navigator.clipboard.writeText(caption); } catch (e) { /* clipboard unavailable; image still downloads */ }
+          if (navigator.canShare && navigator.canShare({ files: [new File([blob], filename, { type: 'image/png' })] })) {
+            navigator.share({ files: [new File([blob], filename, { type: 'image/png' })], title: d.name, text: caption }).catch(() => {});
+          } else {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a'); a.href = url; a.download = filename; document.body.append(a); a.click(); a.remove();
+            setTimeout(() => URL.revokeObjectURL(url), 4000);
+          }
+          btn.classList.add('done'); btn.querySelector('.txt').textContent = 'Saved + caption copied!';
+          setTimeout(() => { btn.classList.remove('done', 'busy'); btn.querySelector('.txt').textContent = 'Share'; }, 2200);
+        }, 'image/png');
+      } catch (e) {
+        btn.classList.remove('busy'); btn.querySelector('.txt').textContent = 'Share';
+      }
+    });
+  });
+})();
