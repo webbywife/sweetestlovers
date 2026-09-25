@@ -1,0 +1,61 @@
+/* Sugar Valley quote posters — 100 downloadable cards about sweet life, friendship, happiness. */
+:root {
+  --cream: #FFF6EA; --paper: #FFFCF7; --ink: #4A2740; --ink-soft: #7A5570;
+  --pink: #FFB3C7; --pink-soft: #FFE6EE; --pink-deep: #D93A76;
+  --mint: #A8E6CF; --mint-soft: #E2F7EE; --mint-deep: #23896A;
+  --lav: #D9CCF5; --lav-soft: #F0EAFC; --cocoa: #7A4B45;
+  --peach: #FFD0B0; --peach-deep: #C96A2E;
+  --display: "Bagel Fat One", "Arial Rounded MT Bold", "Chalkboard SE", "Trebuchet MS", system-ui, sans-serif;
+  --body: "Nunito", "Avenir Next Rounded", "Trebuchet MS", system-ui, sans-serif;
+}
+*, *::before, *::after { box-sizing: border-box; }
+body { margin: 0; background: var(--cream); color: var(--ink); font-family: var(--body); line-height: 1.6; overflow-x: hidden; }
+img { max-width: 100%; }
+:focus-visible { outline: 4px solid var(--pink-deep); outline-offset: 3px; border-radius: 8px; }
+.wrap { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
+body.sheet { background-image: radial-gradient(circle, rgba(122, 75, 69, .06) 2.5px, transparent 2.6px); background-size: 26px 26px; }
+
+.topbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 16px 20px; background: #fff; border-bottom: 3px solid var(--cocoa); position: sticky; top: 0; z-index: 20; }
+.topbar .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--ink); font-family: var(--display); font-size: 1.15rem; }
+.topbar .brand svg { width: 30px; height: 30px; }
+.crumbs { display: flex; gap: 8px; align-items: center; font-weight: 800; font-size: .9rem; flex-wrap: wrap; }
+.crumbs a { text-decoration: none; padding: 6px 14px; border-radius: 999px; background: var(--cream); border: 2px solid var(--cocoa); color: var(--ink); }
+.crumbs a:hover { background: var(--pink-soft); }
+
+.hero { position: relative; text-align: center; padding: 54px 20px 20px; }
+.deco-sky { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 0; }
+.deco-sky svg { position: absolute; animation: hfloat 6s ease-in-out infinite; opacity: .85; }
+@keyframes hfloat { 0%, 100% { transform: translateY(0) rotate(0); } 50% { transform: translateY(-16px) rotate(8deg); } }
+@keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+.hero .eyebrow { position: relative; display: inline-block; margin-bottom: 10px; padding: 6px 18px; border-radius: 999px; background: #fff; border: 3px solid var(--cocoa); font-weight: 800; letter-spacing: .05em; text-transform: uppercase; font-size: .8rem; color: var(--pink-deep); rotate: -2deg; }
+.hero h1 { position: relative; margin: 0 0 8px; font: 400 clamp(2.2rem, 6vw, 3.6rem)/1.05 var(--display); color: var(--pink-deep); -webkit-text-stroke: 8px #fff; paint-order: stroke fill; text-wrap: balance; }
+.hero p { position: relative; margin: 0 auto 20px; max-width: 54ch; font-weight: 700; color: var(--ink-soft); }
+.hero .tagline { position: relative; display: inline-flex; align-items: center; gap: 8px; padding: 8px 20px; border-radius: 999px; background: var(--mint-soft); border: 2px solid var(--mint-deep); font-weight: 800; font-size: .85rem; color: var(--mint-deep); animation: bob 3s ease-in-out infinite; }
+
+.tabs { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; padding: 26px 20px 6px; }
+.tab { padding: 10px 20px; border-radius: 999px; border: 3px solid var(--cocoa); background: #fff; color: var(--ink); font: 800 .88rem/1 var(--body); cursor: pointer; transition: transform .15s, background .15s; }
+.tab:hover { transform: translateY(-2px); }
+.tab[aria-pressed="true"] { background: var(--pink); }
+.count { text-align: center; margin: 10px 0 0; font-weight: 800; color: var(--ink-soft); font-size: .9rem; }
+
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 22px; padding: 24px 0 80px; }
+.qcard { position: relative; display: flex; flex-direction: column; border-radius: 24px; border: 4px solid #fff; outline: 3px solid var(--cocoa); background: linear-gradient(160deg, #fff 0%, var(--light) 120%); padding: 22px 20px 18px; box-shadow: 0 8px 0 rgba(122, 75, 69, .14); transition: transform .2s; min-height: 210px; }
+.qcard:hover { transform: translateY(-5px) rotate(-.5deg); }
+.qcard .tag { align-self: flex-start; margin-bottom: 10px; padding: 3px 12px; border-radius: 999px; background: #fff; border: 2px solid var(--cocoa); font: 800 .68rem/1.6 var(--body); color: var(--dark); text-transform: uppercase; letter-spacing: .03em; }
+.qcard .qtext { flex: 1; margin: 0 0 16px; font: 800 1.08rem/1.42 var(--body); color: var(--ink); }
+.qcard .qtext::before { content: "\201C"; }
+.qcard .qtext::after { content: "\201D"; }
+.qcard .actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.qbtn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 999px; border: 2px solid var(--cocoa); background: #fff; font: 800 .76rem/1 var(--body); color: var(--ink); cursor: pointer; transition: transform .15s, background .15s; }
+.qbtn:hover { transform: translateY(-2px); background: var(--light); }
+.qbtn svg { width: 13px; height: 13px; }
+.qbtn.done { background: var(--mint); border-color: var(--mint-deep); }
+
+.foot { text-align: center; padding: 20px 20px 60px; color: var(--ink-soft); font-weight: 700; font-size: .88rem; }
+.foot .wordmark { display: inline-block; margin-top: 8px; font-family: var(--display); color: var(--pink-deep); font-size: 1.1rem; }
+
+@media (max-width: 480px) {
+  .grid { grid-template-columns: 1fr 1fr; gap: 14px; }
+  .qcard { padding: 16px 14px 14px; min-height: 180px; }
+  .qcard .qtext { font-size: .92rem; }
+}
