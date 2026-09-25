@@ -27,22 +27,43 @@
     return c;
   }
 
-  /** Stamps a thick white die-cut ring around `img` at (cx,cy) sized to fit in `boxSize`, then the art on top. */
-  function stampSticker(ctx, img, cx, cy, boxSize, ringWidth, shadow = true) {
+  /** A tinted silhouette (same alpha mask, filled with `color` instead of white). */
+  function tintedSilhouette(img, w, h, color) {
+    const c = document.createElement('canvas'); c.width = w; c.height = h;
+    const ctx = c.getContext('2d');
+    ctx.drawImage(img, 0, 0, w, h);
+    ctx.globalCompositeOperation = 'source-in';
+    ctx.fillStyle = color;
+    ctx.fillRect(0, 0, w, h);
+    return c;
+  }
+
+  function ring(ctx, sil, x, y, w, h, width, steps = 20) {
+    for (let i = 0; i < steps; i++) {
+      const a = (Math.PI * 2 * i) / steps;
+      ctx.drawImage(sil, x + Math.cos(a) * width, y + Math.sin(a) * width, w, h);
+    }
+  }
+
+  /** Die-cut sticker border around `img` at (cx,cy): a thin colored outline (so the edge reads on
+      any background, not just a white one) behind a thick white ring, then the art on top. */
+  function stampSticker(ctx, img, cx, cy, boxSize, ringWidth, opts = {}) {
+    const { shadow = true, outline = '#7A4B45', outlineWidth = 7 } = opts;
     const scale = Math.min(boxSize / img.width, boxSize / img.height);
     const w = img.width * scale, h = img.height * scale;
     const x = cx - w / 2, y = cy - h / 2;
-    const sil = silhouette(img, w, h);
-    const steps = 20;
     if (shadow) {
+      const shadowSil = silhouette(img, w, h);
       ctx.save(); ctx.globalAlpha = .18;
-      ctx.drawImage(sil, x + ringWidth * .55, y + ringWidth * .9, w, h);
+      ctx.drawImage(shadowSil, x + ringWidth * .55, y + ringWidth * .9, w, h);
       ctx.restore();
     }
-    for (let i = 0; i < steps; i++) {
-      const a = (Math.PI * 2 * i) / steps;
-      ctx.drawImage(sil, x + Math.cos(a) * ringWidth, y + Math.sin(a) * ringWidth, w, h);
+    if (outline && outlineWidth > 0) {
+      const outlineSil = tintedSilhouette(img, w, h, outline);
+      ring(ctx, outlineSil, x, y, w, h, ringWidth + outlineWidth);
     }
+    const whiteSil = silhouette(img, w, h);
+    ring(ctx, whiteSil, x, y, w, h, ringWidth);
     ctx.drawImage(img, x, y, w, h);
     return { x, y, w, h };
   }
@@ -61,14 +82,36 @@
     ctx.restore();
   }
 
-  /* ---------- one sticker: transparent PNG, die-cut border, small brand tag ---------- */
+  /** Fits `text` to `maxWidth` by shrinking the font size (never below `min`), returns the used size. */
+  function fitFont(ctx, text, family, weight, start, min, maxWidth) {
+    let size = start;
+    while (size > min) {
+      ctx.font = `${weight} ${size}px ${family}`;
+      if (ctx.measureText(text).width <= maxWidth) break;
+      size -= 2;
+    }
+    return size;
+  }
+
+  /* ---------- one sticker: transparent PNG, colored+white die-cut border, name lettering, brand tag ---------- */
   async function drawOneSticker(entry) {
-    const S = 900;
-    const canvas = document.createElement('canvas'); canvas.width = S; canvas.height = S;
+    const W = 900, H = 1040;
+    const canvas = document.createElement('canvas'); canvas.width = W; canvas.height = H;
     const ctx = canvas.getContext('2d');
     const img = await loadImg(entry.img);
-    const box = stampSticker(ctx, img, S / 2, S * .46, S * .68, 16);
-    brandBadge(ctx, S / 2, box.y + box.h - 6, 1.15);
+    const box = stampSticker(ctx, img, W / 2, 420, 620, 15, { outline: '#7A4B45', outlineWidth: 8 });
+
+    ctx.textAlign = 'center';
+    const name = entry.name;
+    const size = fitFont(ctx, name, '"Bagel Fat One", cursive', 400, 76, 34, W - 90);
+    ctx.font = `400 ${size}px "Bagel Fat One", cursive`;
+    ctx.lineJoin = 'round'; ctx.miterLimit = 2;
+    ctx.strokeStyle = '#fff'; ctx.lineWidth = size * .16;
+    ctx.strokeText(name, W / 2, box.y + box.h + 78, W - 90);
+    ctx.fillStyle = '#D93A76';
+    ctx.fillText(name, W / 2, box.y + box.h + 78, W - 90);
+
+    brandBadge(ctx, W / 2, box.y + box.h + 150, 1.25);
     return canvas;
   }
 
@@ -162,7 +205,7 @@
       const cx = pad + col * cell + cell / 2, cy = headerH + row * cell + cell / 2;
       const img = imgs[i];
       if (img) {
-        stampSticker(ctx, img, cx, cy - 14, cell * .68, 10, false);
+        stampSticker(ctx, img, cx, cy - 14, cell * .68, 7, { shadow: false, outlineWidth: 4 });
       }
       ctx.font = '400 24px "Bagel Fat One", cursive'; ctx.fillStyle = '#4A2740';
       ctx.lineJoin = 'round'; ctx.strokeStyle = '#fff'; ctx.lineWidth = 6;
