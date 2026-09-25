@@ -69,38 +69,16 @@
     return { x, y, w, h };
   }
 
-  /** The rounded card + pastel circular backdrop behind a sticker, matching the on-page
-      preview tile's own look (radial gradient, white center fading to the character's tone). */
-  function drawCard(ctx, W, H, cardY, cardSize, tone) {
-    const r = 44;
-    // cream card with a faint dot pattern + a thin hairline border (the ONLY outline left —
-    // nothing brown touches the character itself anymore)
-    ctx.fillStyle = '#FFFCF7';
-    roundRect(ctx, W / 2 - cardSize / 2, cardY, cardSize, cardSize, r);
-    ctx.fill();
-    ctx.save();
-    roundRect(ctx, W / 2 - cardSize / 2, cardY, cardSize, cardSize, r);
-    ctx.clip();
-    ctx.fillStyle = 'rgba(122,75,69,.05)';
-    for (let yy = cardY + 14; yy < cardY + cardSize; yy += 26) {
-      for (let xx = W / 2 - cardSize / 2 + 14; xx < W / 2 + cardSize / 2; xx += 26) {
-        ctx.beginPath(); ctx.arc(xx, yy, 2.4, 0, Math.PI * 2); ctx.fill();
-      }
-    }
-    ctx.restore();
-    ctx.strokeStyle = '#7A4B45'; ctx.globalAlpha = .35; ctx.lineWidth = 2.5;
-    roundRect(ctx, W / 2 - cardSize / 2, cardY, cardSize, cardSize, r); ctx.stroke();
-    ctx.globalAlpha = 1;
-
-    const circleR = cardSize * .42;
-    const ccx = W / 2, ccy = cardY + cardSize * .46;
-    const grad = ctx.createRadialGradient(ccx - circleR * .16, ccy - circleR * .22, circleR * .1, ccx, ccy, circleR);
+  /** A plain pastel backdrop filling the whole sticker canvas — no card, no border, no dot
+      pattern, just a soft radial wash from white toward the character's tone. */
+  function drawPlainBg(ctx, W, H, tone) {
+    const cx = W / 2, cy = H * .4;
+    const grad = ctx.createRadialGradient(cx - W * .06, cy - H * .06, H * .04, cx, cy, Math.max(W, H) * .72);
     grad.addColorStop(0, '#fff');
-    grad.addColorStop(.32, tone);
+    grad.addColorStop(.34, tone);
     grad.addColorStop(1, tone);
     ctx.fillStyle = grad;
-    ctx.beginPath(); ctx.arc(ccx, ccy, circleR, 0, Math.PI * 2); ctx.fill();
-    return { ccx, ccy, circleR };
+    ctx.fillRect(0, 0, W, H);
   }
 
   function brandBadge(ctx, cx, cy, scale = 1) {
@@ -128,29 +106,29 @@
     return size;
   }
 
-  /* ---------- one sticker: a rounded card with a pastel circular backdrop (matching the
-     on-page preview tile), a white-only die-cut ring — no brown outline on the character —
-     name lettering below, brand tag overlapping the circle's bottom edge ---------- */
+  /* ---------- one sticker: a plain pastel backdrop (no card, no border), a white-only
+     die-cut ring — no brown outline on the character — name lettering below, brand
+     tag between the character and the name ---------- */
   async function drawOneSticker(entry) {
     const W = 900, H = 980;
     const canvas = document.createElement('canvas'); canvas.width = W; canvas.height = H;
     const ctx = canvas.getContext('2d');
     ctx.textAlign = 'center';
 
-    const cardSize = 800, cardY = 40;
-    const { ccy, circleR } = drawCard(ctx, W, H, cardY, cardSize, entry.tone);
+    drawPlainBg(ctx, W, H, entry.tone);
 
+    const stickerCy = 420;
     const img = await loadImg(entry.img);
-    const box = stampSticker(ctx, img, W / 2, ccy - 18, circleR * 1.42, 13);
+    stampSticker(ctx, img, W / 2, stickerCy, 560, 13);
 
-    brandBadge(ctx, W / 2, cardY + cardSize * .855, 1.15);
+    brandBadge(ctx, W / 2, 760, 1.15);
 
     const name = entry.name;
     const size = fitFont(ctx, name, '"Bagel Fat One", cursive', 400, 66, 32, W - 90);
     ctx.font = `400 ${size}px "Bagel Fat One", cursive`;
     ctx.lineJoin = 'round'; ctx.miterLimit = 2;
     ctx.strokeStyle = '#fff'; ctx.lineWidth = size * .16;
-    const nameY = cardY + cardSize + 64;
+    const nameY = 890;
     ctx.strokeText(name, W / 2, nameY, W - 90);
     ctx.fillStyle = '#D93A76';
     ctx.fillText(name, W / 2, nameY, W - 90);
