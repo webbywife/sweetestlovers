@@ -45,10 +45,11 @@
     }
   }
 
-  /** Die-cut sticker border around `img` at (cx,cy): a thin colored outline (so the edge reads on
-      any background, not just a white one) behind a thick white ring, then the art on top. */
+  /** Die-cut sticker border around `img` at (cx,cy): a soft ground shadow, then a thick WHITE
+      ring only (no colored outline — it sits on a pastel card backdrop now, so white alone
+      already reads clearly), then the art on top. */
   function stampSticker(ctx, img, cx, cy, boxSize, ringWidth, opts = {}) {
-    const { shadow = true, outline = '#7A4B45', outlineWidth = 7 } = opts;
+    const { shadow = true, outline = null, outlineWidth = 0 } = opts;
     const scale = Math.min(boxSize / img.width, boxSize / img.height);
     const w = img.width * scale, h = img.height * scale;
     const x = cx - w / 2, y = cy - h / 2;
@@ -66,6 +67,40 @@
     ring(ctx, whiteSil, x, y, w, h, ringWidth);
     ctx.drawImage(img, x, y, w, h);
     return { x, y, w, h };
+  }
+
+  /** The rounded card + pastel circular backdrop behind a sticker, matching the on-page
+      preview tile's own look (radial gradient, white center fading to the character's tone). */
+  function drawCard(ctx, W, H, cardY, cardSize, tone) {
+    const r = 44;
+    // cream card with a faint dot pattern + a thin hairline border (the ONLY outline left —
+    // nothing brown touches the character itself anymore)
+    ctx.fillStyle = '#FFFCF7';
+    roundRect(ctx, W / 2 - cardSize / 2, cardY, cardSize, cardSize, r);
+    ctx.fill();
+    ctx.save();
+    roundRect(ctx, W / 2 - cardSize / 2, cardY, cardSize, cardSize, r);
+    ctx.clip();
+    ctx.fillStyle = 'rgba(122,75,69,.05)';
+    for (let yy = cardY + 14; yy < cardY + cardSize; yy += 26) {
+      for (let xx = W / 2 - cardSize / 2 + 14; xx < W / 2 + cardSize / 2; xx += 26) {
+        ctx.beginPath(); ctx.arc(xx, yy, 2.4, 0, Math.PI * 2); ctx.fill();
+      }
+    }
+    ctx.restore();
+    ctx.strokeStyle = '#7A4B45'; ctx.globalAlpha = .35; ctx.lineWidth = 2.5;
+    roundRect(ctx, W / 2 - cardSize / 2, cardY, cardSize, cardSize, r); ctx.stroke();
+    ctx.globalAlpha = 1;
+
+    const circleR = cardSize * .42;
+    const ccx = W / 2, ccy = cardY + cardSize * .46;
+    const grad = ctx.createRadialGradient(ccx - circleR * .16, ccy - circleR * .22, circleR * .1, ccx, ccy, circleR);
+    grad.addColorStop(0, '#fff');
+    grad.addColorStop(.32, tone);
+    grad.addColorStop(1, tone);
+    ctx.fillStyle = grad;
+    ctx.beginPath(); ctx.arc(ccx, ccy, circleR, 0, Math.PI * 2); ctx.fill();
+    return { ccx, ccy, circleR };
   }
 
   function brandBadge(ctx, cx, cy, scale = 1) {
@@ -93,25 +128,33 @@
     return size;
   }
 
-  /* ---------- one sticker: transparent PNG, colored+white die-cut border, name lettering, brand tag ---------- */
+  /* ---------- one sticker: a rounded card with a pastel circular backdrop (matching the
+     on-page preview tile), a white-only die-cut ring — no brown outline on the character —
+     name lettering below, brand tag overlapping the circle's bottom edge ---------- */
   async function drawOneSticker(entry) {
-    const W = 900, H = 1040;
+    const W = 900, H = 980;
     const canvas = document.createElement('canvas'); canvas.width = W; canvas.height = H;
     const ctx = canvas.getContext('2d');
-    const img = await loadImg(entry.img);
-    const box = stampSticker(ctx, img, W / 2, 420, 620, 15, { outline: '#7A4B45', outlineWidth: 8 });
-
     ctx.textAlign = 'center';
+
+    const cardSize = 800, cardY = 40;
+    const { ccy, circleR } = drawCard(ctx, W, H, cardY, cardSize, entry.tone);
+
+    const img = await loadImg(entry.img);
+    const box = stampSticker(ctx, img, W / 2, ccy - 18, circleR * 1.42, 13);
+
+    brandBadge(ctx, W / 2, cardY + cardSize * .855, 1.15);
+
     const name = entry.name;
-    const size = fitFont(ctx, name, '"Bagel Fat One", cursive', 400, 76, 34, W - 90);
+    const size = fitFont(ctx, name, '"Bagel Fat One", cursive', 400, 66, 32, W - 90);
     ctx.font = `400 ${size}px "Bagel Fat One", cursive`;
     ctx.lineJoin = 'round'; ctx.miterLimit = 2;
     ctx.strokeStyle = '#fff'; ctx.lineWidth = size * .16;
-    ctx.strokeText(name, W / 2, box.y + box.h + 78, W - 90);
+    const nameY = cardY + cardSize + 64;
+    ctx.strokeText(name, W / 2, nameY, W - 90);
     ctx.fillStyle = '#D93A76';
-    ctx.fillText(name, W / 2, box.y + box.h + 78, W - 90);
+    ctx.fillText(name, W / 2, nameY, W - 90);
 
-    brandBadge(ctx, W / 2, box.y + box.h + 150, 1.25);
     return canvas;
   }
 
@@ -221,7 +264,7 @@
       const cx = pad + col * cell + cell / 2, cy = headerH + row * cell + cell / 2;
       const img = imgs[i];
       if (img) {
-        stampSticker(ctx, img, cx, cy - 14, cell * .68, 7, { shadow: false, outlineWidth: 4 });
+        stampSticker(ctx, img, cx, cy - 14, cell * .68, 7, { shadow: false, outline: '#7A4B45', outlineWidth: 4 });
       }
       ctx.font = '400 24px "Bagel Fat One", cursive'; ctx.fillStyle = '#4A2740';
       ctx.lineJoin = 'round'; ctx.strokeStyle = '#fff'; ctx.lineWidth = 6;
