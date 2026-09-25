@@ -82,7 +82,7 @@ a, button { -webkit-tap-highlight-color: transparent; }
 .tool[aria-pressed="true"] { background: var(--mint); }
 
 /* ---------- hero: the town ---------- */
-.hero { position: relative; z-index: 2; min-height: clamp(960px, 100svh, 1050px); overflow: hidden; display: flex; flex-direction: column; align-items: center; padding: clamp(64px, 11vh, 120px) 16px 0; background: linear-gradient(#FFC5D9 0%, #FFE3EC 48%, #FFF6EA 100%); --mx: 0; --my: 0; }
+.hero { position: relative; z-index: 2; min-height: clamp(1040px, 100svh, 1100px); overflow: hidden; display: flex; flex-direction: column; align-items: center; padding: clamp(64px, 11vh, 120px) 16px 0; background: linear-gradient(#FFC5D9 0%, #FFCEDC 62%, #FFE3EC 85%, #FFF6EA 100%); --mx: 0; --my: 0; }
 .sky { position: absolute; inset: 0; pointer-events: none; }
 .cloud { position: absolute; animation: driftx 30s ease-in-out infinite alternate; cursor: pointer; pointer-events: auto; translate: calc(var(--mx) * -14px) calc(var(--my) * -8px); transition: scale .3s; }
 .cloud:hover { scale: 1.08; }
@@ -109,11 +109,11 @@ a, button { -webkit-tap-highlight-color: transparent; }
 .cta:hover { transform: translateY(-3px) rotate(-2deg); }
 .cta:active { transform: translateY(4px); box-shadow: 0 3px 0 var(--mint-deep); }
 @keyframes bob { 0%, 100% { translate: 0 0; } 50% { translate: 0 -8px; } }
-.town { position: absolute; left: 0; right: 0; bottom: 0; height: clamp(200px, 30vw, 360px); pointer-events: none; }
+.town { position: absolute; left: 0; right: 0; bottom: 0; height: clamp(280px, 40vw, 480px); pointer-events: none; }
 .town-svg { width: 100%; height: 100%; display: block; }
-.town-svg .far { opacity: .7; }
+.town-svg .far { opacity: .85; }
 .street { position: absolute; z-index: 4; left: 0; right: 0; bottom: 3%; display: flex; justify-content: center; align-items: flex-end; gap: clamp(0px, 1.4vw, 22px); padding: 0 8px; pointer-events: none; }
-.hs { position: relative; pointer-events: auto; background: none; border: 0; padding: 0; cursor: pointer; width: clamp(64px, 11vw, 150px); flex: none; animation: bob 3s ease-in-out infinite; animation-delay: var(--d, 0s); translate: calc(var(--mx) * 10px) 0; }
+.hs { position: relative; pointer-events: auto; background: none; border: 0; padding: 0; cursor: pointer; width: clamp(80px, 14vw, 190px); flex: none; animation: bob 3s ease-in-out infinite; animation-delay: var(--d, 0s); translate: calc(var(--mx) * 10px) 0; }
 .hs img { display: block; width: 100%; filter: drop-shadow(0 6px 0 rgba(122, 75, 69, .18)); transition: transform .2s; }
 .hs:hover img { transform: scale(1.1) rotate(-4deg); }
 .hs.pop img { animation: pop .5s cubic-bezier(.3, 1.6, .5, 1); }
