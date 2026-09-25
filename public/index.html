@@ -82,7 +82,7 @@ a, button { -webkit-tap-highlight-color: transparent; }
 .tool[aria-pressed="true"] { background: var(--mint); }
 
 /* ---------- hero: the town ---------- */
-.hero { position: relative; z-index: 2; min-height: min(94svh, 880px); overflow: hidden; display: flex; flex-direction: column; align-items: center; padding: clamp(64px, 11vh, 120px) 16px 0; background: linear-gradient(#FFC5D9 0%, #FFE3EC 48%, #FFF6EA 100%); --mx: 0; --my: 0; }
+.hero { position: relative; z-index: 2; min-height: clamp(960px, 100svh, 1050px); overflow: hidden; display: flex; flex-direction: column; align-items: center; padding: clamp(64px, 11vh, 120px) 16px 0; background: linear-gradient(#FFC5D9 0%, #FFE3EC 48%, #FFF6EA 100%); --mx: 0; --my: 0; }
 .sky { position: absolute; inset: 0; pointer-events: none; }
 .cloud { position: absolute; animation: driftx 30s ease-in-out infinite alternate; cursor: pointer; pointer-events: auto; translate: calc(var(--mx) * -14px) calc(var(--my) * -8px); transition: scale .3s; }
 .cloud:hover { scale: 1.08; }
