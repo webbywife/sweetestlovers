@@ -41,6 +41,11 @@ body.sheet { background-image: radial-gradient(circle, rgba(122, 75, 69, .06) 2.
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 22px; padding: 24px 0 80px; }
 .qcard { position: relative; display: flex; flex-direction: column; border-radius: 24px; border: 4px solid #fff; outline: 3px solid var(--cocoa); background: linear-gradient(160deg, #fff 0%, var(--light) 120%); padding: 22px 20px 18px; box-shadow: 0 8px 0 rgba(122, 75, 69, .14); transition: transform .2s; min-height: 210px; }
 .qcard:hover { transform: translateY(-5px) rotate(-.5deg); }
+.qcard .preview { position: relative; aspect-ratio: 4 / 5; margin: -22px -20px 14px; border-radius: 20px 20px 0 0; overflow: hidden; display: grid; place-items: center; }
+.qcard .preview img { width: 100%; height: 100%; object-fit: cover; animation: previewIn .3s ease; }
+.qcard .preview .loading { font: 800 .78rem/1.4 var(--body); color: var(--dark); opacity: .6; }
+.qcard .preview.failed .loading::after { content: " (preview unavailable — download still works)"; }
+@keyframes previewIn { from { opacity: 0; scale: .97; } to { opacity: 1; scale: 1; } }
 .qcard .tag { align-self: flex-start; margin-bottom: 10px; padding: 3px 12px; border-radius: 999px; background: #fff; border: 2px solid var(--cocoa); font: 800 .68rem/1.6 var(--body); color: var(--dark); text-transform: uppercase; letter-spacing: .03em; }
 .qcard .qtext { flex: 1; margin: 0 0 16px; font: 800 1.08rem/1.42 var(--body); color: var(--ink); }
 .qcard .qtext::before { content: "\201C"; }

@@ -1,12 +1,13 @@
-/* Sugar Valley quote posters. `window.QUOTES` and `window.CAST_IMAGES` are set inline before
-   this loads: QUOTES = [{id,theme,text,tag,light,dark}], CAST_IMAGES = ["../images/characters/...webp", ...] */
+/* Sugar Valley quote posters. `window.QUOTES` and `window.CAST_BY_THEME` are set inline before
+   this loads: QUOTES = [{id,theme,text,tag,light,dark}], CAST_BY_THEME = {theme: ["../images/characters/...webp", ...]} */
 (() => {
   'use strict';
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const QUOTES = window.QUOTES || [];
-  const CAST_IMAGES = window.CAST_IMAGES || [];
+  const CAST_BY_THEME = window.CAST_BY_THEME || {};
   const byId = Object.fromEntries(QUOTES.map(q => [q.id, q]));
+  const canvasCache = new Map(); // quote id -> rendered canvas, so the preview and the download share one render
 
   /* ---------- theme filter tabs ---------- */
   const tabs = $$('.tab');
@@ -121,8 +122,9 @@
     lines.forEach((l, i) => ctx.fillText(l, W / 2, startY + i * lineH, 900));
 
     try {
-      const idx = Math.abs(hashCode(q.id)) % CAST_IMAGES.length;
-      const img = await loadImg(CAST_IMAGES[idx]);
+      const cast = CAST_BY_THEME[q.theme] || [];
+      const idx = Math.abs(hashCode(q.id)) % cast.length;
+      const img = await loadImg(cast[idx]);
       const boxSize = 190;
       const scale = Math.min(boxSize / img.width, boxSize / img.height);
       const iw = img.width * scale, ih = img.height * scale;
@@ -141,6 +143,34 @@
     ctx.fillText(`#SugarValley ${q.tag}`, W / 2, H - 26, 700);
     return canvas;
   }
+
+  /** Draws once per quote and reuses the result — the visible preview and the eventual
+      download are always pixel-identical, and clicking Download after the preview has
+      already rendered is instant. */
+  async function getOrDrawPoster(q) {
+    if (!canvasCache.has(q.id)) canvasCache.set(q.id, drawPoster(q));
+    return canvasCache.get(q.id);
+  }
+
+  /* ---------- lazy preview: render a card's poster once it scrolls near view ---------- */
+  const previewObserver = new IntersectionObserver((entries, obs) => {
+    entries.forEach(entry => {
+      if (!entry.isIntersecting) return;
+      const card = entry.target;
+      obs.unobserve(card);
+      const q = byId[card.dataset.id];
+      const box = $('.preview', card);
+      if (!q || !box) return;
+      getOrDrawPoster(q).then(canvas => {
+        const img = new Image();
+        img.alt = `Preview of the ${q.theme} poster: “${q.text}”`;
+        img.src = canvas.toDataURL('image/png');
+        box.replaceChildren(img);
+        box.classList.add('ready');
+      }).catch(() => { box.classList.add('failed'); });
+    });
+  }, { rootMargin: '400px 0px' });
+  $$('.qcard').forEach(card => previewObserver.observe(card));
 
   function downloadCanvas(canvas, filename) {
     return new Promise(resolve => {
@@ -162,7 +192,7 @@
     dl.addEventListener('click', async () => {
       dl.classList.add('busy'); dl.querySelector('.txt').textContent = 'Making…';
       try {
-        const canvas = await drawPoster(q);
+        const canvas = await getOrDrawPoster(q);
         await downloadCanvas(canvas, `sugar-valley-${q.id}.png`);
         dl.classList.add('done'); dl.querySelector('.txt').textContent = 'Saved! ✓';
       } catch (e) {
