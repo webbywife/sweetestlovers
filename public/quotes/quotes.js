@@ -129,10 +129,11 @@
   }
 
   /* ---------- the poster: 1080x1350 (portrait, IG/Pinterest-ready) ----------
-     Layout is computed FIRST (text size, character count/positions), so the character
-     group always centers in whatever vertical space is actually left over, instead of
-     sitting at a fixed offset that leaves a growing dead zone for short quotes. Only
-     once every position is known do we draw: background → decoration → text → group → footer. */
+     Restructured after a reference (@komal_reads-style quote carousels): clean stacked
+     zones, not overlapping ones — a bold top-anchored headline, a heart divider, then a
+     full illustrated "stage" below that's composed to fill its zone (a ground platform +
+     concentrated scenery under the characters), not 2-3 small icons adrift in empty
+     canvas. Layout is fully computed before anything is drawn. */
   async function drawPoster(q) {
     const W = 1080, H = 1350;
     const canvas = document.createElement('canvas'); canvas.width = W; canvas.height = H;
@@ -140,81 +141,85 @@
     const rnd = mulberry32(hashCode(q.id));
     ctx.textAlign = 'center';
 
-    // 1) quote text layout — the quote is the poster's headline, so it gets first claim on
-    // size (measure only here; font must be set to measure, but nothing paints yet)
-    const headerBottom = 150;
-    ctx.font = '400 78px "Bagel Fat One", cursive'; // fitQuote resets this per candidate size anyway
-    const { size, lines } = fitQuote(ctx, q.text, '"Bagel Fat One", cursive', 400, 78, 40, 880, 5);
+    // 1) quote text — the headline, top-anchored, clean (nothing overlaps it)
+    const headerBottom = 150, footerTop = H - 100;
+    const dividerY = headerBottom + 34;
+    const textTop = dividerY + 50;
+    ctx.font = '400 74px "Bagel Fat One", cursive'; // fitQuote resets this per candidate size anyway
+    const { size, lines } = fitQuote(ctx, q.text, '"Bagel Fat One", cursive', 400, 74, 38, 860, 5);
     const lineH = size * 1.16;
-    const textTop = headerBottom + 60;
     const textBottom = textTop + size * .82 + (lines.length - 1) * lineH + size * .3;
 
-    // 2) pick 2-3 theme-appropriate characters — a supporting illustration, sized clearly
-    // smaller than the text so the quote stays the thing you read first
+    // 2) the illustrated stage: everything from the divider-under-the-quote down to the
+    // footer is ONE composed scene — a ground platform under 2-3 theme-matched characters,
+    // with scenery concentrated around them so the zone reads as full, not empty
+    const stageDividerY = textBottom + 46;
+    const stageTop = stageDividerY + 40;
     const pool = (CAST_BY_THEME[q.theme] || []).slice();
     const count = pool.length >= 3 && rnd() > .35 ? 3 : Math.min(2, pool.length);
     const chosen = [];
     for (let i = 0; i < count && pool.length; i++) chosen.push(pool.splice(Math.floor(rnd() * pool.length), 1)[0]);
-    const footerTop = H - 108;
-    const groupCy = textBottom + (footerTop - textBottom) / 2; // centered in whatever room is left
     const positions = count === 3
-      ? [{ dx: -195, dy: -30, box: 200 }, { dx: 195, dy: -30, box: 200 }, { dx: 0, dy: 12, box: 250 }]
+      ? [{ dx: -220, dy: 10, box: 230 }, { dx: 220, dy: 10, box: 230 }, { dx: 0, dy: -25, box: 290 }]
       : count === 2
-        ? [{ dx: -150, dy: 0, box: 235 }, { dx: 150, dy: 0, box: 235 }]
-        : [{ dx: 0, dy: 0, box: 250 }];
-    const groupTop = groupCy + Math.min(...positions.map(p => p.dy - p.box / 2));
-    const groupBottom = groupCy + Math.max(...positions.map(p => p.dy + p.box / 2));
+        ? [{ dx: -170, dy: 0, box: 270 }, { dx: 170, dy: 0, box: 270 }]
+        : [{ dx: 0, dy: 0, box: 290 }];
+    const platformW = Math.max(...positions.map(p => Math.abs(p.dx))) * 2 + 260;
+    const platformH = 60;
+    // the platform's vertical center sits right at the characters' feet line, so its top
+    // half is hidden behind their legs (grounded) and its bottom half shows as a stage lip
+    const feetOffset = Math.max(...positions.map(p => p.dy + p.box / 2));
+    const topOffset = Math.min(...positions.map(p => p.dy - p.box / 2));
+    const relTop = topOffset, relBottom = feetOffset + platformH / 2;
+    const available = footerTop - stageTop;
+    const platformCy = stageTop + Math.max(20, (available - (relBottom - relTop)) / 2) - relTop;
 
-    // 3) background + a different little line-art kawaii scene per poster (same seed as
-    // everything else here, so a card's live preview always matches what downloads)
+    // 3) background
     const grad = ctx.createLinearGradient(0, 0, W, H);
-    grad.addColorStop(0, q.light); grad.addColorStop(.45, '#FFF6EA'); grad.addColorStop(1, '#FFF6EA');
+    grad.addColorStop(0, q.light); grad.addColorStop(.4, '#FFF6EA'); grad.addColorStop(1, '#FFF6EA');
     ctx.fillStyle = grad; ctx.fillRect(0, 0, W, H);
 
+    // decoration lives ONLY inside the stage zone now, clustered around the platform so
+    // the illustration reads as one full scene instead of scattered confetti
     const PASTELS = ['#FFB3C7', '#FFD0B0', '#A8E6CF', '#BFE5F7', '#D9CCF5'];
     const scene = Math.floor(rnd() * 4); // 0 clouds · 1 stars · 2 rainbow · 3 flowers
-    const pad = 70;
-    const inKeepClear = (x, y) =>
-      (y > headerBottom && y < textBottom + 20) ||
-      (y > groupTop - pad && y < groupBottom + pad && x > W / 2 - 390 && x < W / 2 + 390);
-    const scatter = (n, draw) => {
+    const stageInClear = (x, y) =>
+      y > platformCy + topOffset - 30 && y < platformCy + feetOffset + platformH / 2 + 30 &&
+      x > W / 2 - platformW / 2 - 40 && x < W / 2 + platformW / 2 + 40;
+    const scatterStage = (n, draw) => {
       for (let i = 0; i < n; i++) {
         let x, y, tries = 0;
-        do { x = rnd() * W; y = 40 + rnd() * (H - 80); tries++; } while (inKeepClear(x, y) && tries < 8);
+        do {
+          x = W / 2 + (rnd() - .5) * (platformW + 420);
+          y = stageTop + rnd() * (footerTop - stageTop - 20);
+          tries++;
+        } while (stageInClear(x, y) && tries < 8);
         draw(x, y, i);
       }
     };
     if (scene === 0) {
-      scatter(8, (x, y) => lineCloud(ctx, x, y, 70 + rnd() * 90, rnd() > .5 ? '#fff' : q.dark, .35 + rnd() * .3));
+      scatterStage(9, (x, y) => lineCloud(ctx, x, y, 65 + rnd() * 80, rnd() > .5 ? '#fff' : q.dark, .4 + rnd() * .3));
     } else if (scene === 1) {
-      scatter(12, (x, y) => lineStar(ctx, x, y, 20 + rnd() * 26, rnd() > .5 ? '#fff' : q.dark, .4 + rnd() * .35, rnd() * Math.PI));
+      scatterStage(13, (x, y) => lineStar(ctx, x, y, 18 + rnd() * 24, rnd() > .5 ? '#fff' : q.dark, .45 + rnd() * .35, rnd() * Math.PI));
     } else if (scene === 2) {
-      const cx = rnd() > .5 ? 60 : W - 60, cy = 60;
-      lineRainbow(ctx, cx, cy, 3.4 + rnd(), PASTELS, .85, cx > W / 2 ? Math.PI / 2 : -Math.PI / 2);
-      scatter(8, (x, y) => lineStar(ctx, x, y, 18 + rnd() * 20, '#fff', .4 + rnd() * .3, rnd() * Math.PI));
+      lineRainbow(ctx, W / 2, stageTop - 10, 3.6 + rnd() * .6, PASTELS, .9, 0);
+      scatterStage(8, (x, y) => lineStar(ctx, x, y, 16 + rnd() * 18, '#fff', .4 + rnd() * .3, rnd() * Math.PI));
     } else {
-      scatter(9, (x, y) => lineFlower(ctx, x, y, 40 + rnd() * 34, PASTELS[Math.floor(rnd() * PASTELS.length)], .5 + rnd() * .3, rnd() * Math.PI));
+      scatterStage(10, (x, y) => lineFlower(ctx, x, y, 36 + rnd() * 30, PASTELS[Math.floor(rnd() * PASTELS.length)], .55 + rnd() * .3, rnd() * Math.PI));
     }
-    scatter(7, (x, y) => lineHeart(ctx, x, y, 16 + rnd() * 18, '#fff', .4 + rnd() * .25, (rnd() - .5) * .6));
+    scatterStage(8, (x, y) => lineHeart(ctx, x, y, 15 + rnd() * 16, '#fff', .45 + rnd() * .25, (rnd() - .5) * .6));
 
-    // 4) header + quote text
-    ctx.fillStyle = '#fff'; roundRect(ctx, W / 2 - 260, 70, 520, 64, 32); ctx.fill();
-    ctx.strokeStyle = '#7A4B45'; ctx.lineWidth = 4; roundRect(ctx, W / 2 - 260, 70, 520, 64, 32); ctx.stroke();
-    ctx.fillStyle = q.dark;
-    ctx.font = '800 24px Nunito, sans-serif';
-    ctx.fillText(`🍪 SUGAR VALLEY · ON ${q.theme.toUpperCase()}`, W / 2, 111, 480);
+    // a couple of quiet accents up in the headline zone too, so it isn't bare
+    lineHeart(ctx, W / 2, dividerY - 120, 20, q.dark, .18, 0);
 
-    ctx.font = '400 110px "Bagel Fat One", cursive';
-    ctx.fillStyle = q.dark; ctx.globalAlpha = .2;
-    ctx.fillText('“', W / 2, textTop + 30);
-    ctx.globalAlpha = 1;
+    // 4) the ground platform + character group — one composed little scene
+    ctx.save();
+    ctx.globalAlpha = .9;
+    ctx.fillStyle = q.light;
+    roundRect(ctx, W / 2 - platformW / 2, platformCy + feetOffset - platformH / 2, platformW, platformH, platformH / 2);
+    ctx.fill();
+    ctx.restore();
 
-    ctx.font = `400 ${size}px "Bagel Fat One", cursive`;
-    ctx.fillStyle = '#4A2740';
-    const firstBaseline = textTop + size * .82;
-    lines.forEach((l, i) => ctx.fillText(l, W / 2, firstBaseline + i * lineH, 900));
-
-    // 5) the character group, centered in the leftover space — the poster's visual heart
     const stampDieCut = (img, cx, cy, boxSize) => {
       const scale = Math.min(boxSize / img.width, boxSize / img.height);
       const iw = img.width * scale, ih = img.height * scale;
@@ -227,10 +232,31 @@
     };
     try {
       const imgs = await Promise.all(chosen.map(loadImg));
-      imgs.forEach((img, i) => stampDieCut(img, W / 2 + positions[i].dx, groupCy + positions[i].dy, positions[i].box));
+      imgs.forEach((img, i) => stampDieCut(img, W / 2 + positions[i].dx, platformCy + positions[i].dy, positions[i].box));
     } catch (e) { /* character art unreachable from this origin; poster still works without it */ }
 
-    // 6) footer
+    // 5) header pill + heart divider + quote headline
+    ctx.fillStyle = '#fff'; roundRect(ctx, W / 2 - 260, 70, 520, 64, 32); ctx.fill();
+    ctx.strokeStyle = '#7A4B45'; ctx.lineWidth = 4; roundRect(ctx, W / 2 - 260, 70, 520, 64, 32); ctx.stroke();
+    ctx.fillStyle = q.dark;
+    ctx.font = '800 24px Nunito, sans-serif';
+    ctx.fillText(`🍪 SUGAR VALLEY · ON ${q.theme.toUpperCase()}`, W / 2, 111, 480);
+    lineHeart(ctx, W / 2, dividerY, 22, q.dark, .55, 0);
+
+    ctx.font = `400 ${size}px "Bagel Fat One", cursive`;
+    ctx.fillStyle = '#4A2740';
+    const firstBaseline = textTop + size * .82;
+    lines.forEach((l, i) => ctx.fillText(l, W / 2, firstBaseline + i * lineH, 900));
+
+    // 6) the divider between quote and illustration — a thin line with a heart at center,
+    // echoing the reference's "headline / body" separator
+    ctx.strokeStyle = q.dark; ctx.globalAlpha = .35; ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.moveTo(W / 2 - 220, stageDividerY); ctx.lineTo(W / 2 - 24, stageDividerY); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(W / 2 + 24, stageDividerY); ctx.lineTo(W / 2 + 220, stageDividerY); ctx.stroke();
+    ctx.globalAlpha = 1;
+    lineHeart(ctx, W / 2, stageDividerY - 6, 20, q.dark, .7, 0);
+
+    // 7) footer
     ctx.font = '800 26px Nunito, sans-serif'; ctx.fillStyle = '#7A5570';
     ctx.fillText('Your Daily Dose of Love & Sweetness', W / 2, H - 60, 700);
     ctx.font = '700 24px Nunito, sans-serif'; ctx.fillStyle = q.dark;
