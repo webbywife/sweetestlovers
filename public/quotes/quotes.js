@@ -143,26 +143,29 @@
     // draw, so a card's live preview always matches what actually downloads.
     const PASTELS = ['#FFB3C7', '#FFD0B0', '#A8E6CF', '#BFE5F7', '#D9CCF5'];
     const scene = Math.floor(rnd() * 4); // 0 clouds · 1 stars · 2 rainbow · 3 flowers
-    const inText = (x, y) => x > W * .12 && x < W * .88 && y > H * .32 && y < H * .68;
+    // keep decorations off the quote text (upper band) and the character group (center band) —
+    // sized to the group's actual footprint, not the whole middle, so the lower third isn't bare
+    const inKeepClear = (x, y) =>
+      (y > H * .10 && y < H * .39) || (y > H * .43 && y < H * .68 && x > W * .12 && x < W * .88);
     const scatter = (n, draw) => {
       for (let i = 0; i < n; i++) {
         let x, y, tries = 0;
-        do { x = rnd() * W; y = rnd() * H * .82; tries++; } while (inText(x, y) && tries < 6);
+        do { x = rnd() * W; y = rnd() * H * .95; tries++; } while (inKeepClear(x, y) && tries < 6);
         draw(x, y, i);
       }
     };
     if (scene === 0) {
-      scatter(6, (x, y) => lineCloud(ctx, x, y, 70 + rnd() * 90, rnd() > .5 ? '#fff' : q.dark, .35 + rnd() * .3));
+      scatter(7, (x, y) => lineCloud(ctx, x, y, 70 + rnd() * 90, rnd() > .5 ? '#fff' : q.dark, .35 + rnd() * .3));
     } else if (scene === 1) {
-      scatter(9, (x, y) => lineStar(ctx, x, y, 20 + rnd() * 26, rnd() > .5 ? '#fff' : q.dark, .4 + rnd() * .35, rnd() * Math.PI));
+      scatter(11, (x, y) => lineStar(ctx, x, y, 20 + rnd() * 26, rnd() > .5 ? '#fff' : q.dark, .4 + rnd() * .35, rnd() * Math.PI));
     } else if (scene === 2) {
       const cx = rnd() > .5 ? 60 : W - 60, cy = 60;
       lineRainbow(ctx, cx, cy, 3.4 + rnd(), PASTELS, .85, cx > W / 2 ? Math.PI / 2 : -Math.PI / 2);
-      scatter(6, (x, y) => lineStar(ctx, x, y, 18 + rnd() * 20, '#fff', .4 + rnd() * .3, rnd() * Math.PI));
+      scatter(7, (x, y) => lineStar(ctx, x, y, 18 + rnd() * 20, '#fff', .4 + rnd() * .3, rnd() * Math.PI));
     } else {
-      scatter(7, (x, y) => lineFlower(ctx, x, y, 40 + rnd() * 34, PASTELS[Math.floor(rnd() * PASTELS.length)], .5 + rnd() * .3, rnd() * Math.PI));
+      scatter(8, (x, y) => lineFlower(ctx, x, y, 40 + rnd() * 34, PASTELS[Math.floor(rnd() * PASTELS.length)], .5 + rnd() * .3, rnd() * Math.PI));
     }
-    scatter(4, (x, y) => lineHeart(ctx, x, y, 16 + rnd() * 18, '#fff', .4 + rnd() * .25, (rnd() - .5) * .6));
+    scatter(6, (x, y) => lineHeart(ctx, x, y, 16 + rnd() * 18, '#fff', .4 + rnd() * .25, (rnd() - .5) * .6));
 
     ctx.textAlign = 'center';
     ctx.fillStyle = '#fff'; roundRect(ctx, W / 2 - 260, 70, 520, 64, 32); ctx.fill();
@@ -171,34 +174,48 @@
     ctx.font = '800 24px Nunito, sans-serif';
     ctx.fillText(`🍪 SUGAR VALLEY · ON ${q.theme.toUpperCase()}`, W / 2, 111, 480);
 
-    ctx.font = '400 220px "Bagel Fat One", cursive';
+    ctx.font = '400 120px "Bagel Fat One", cursive';
     ctx.fillStyle = q.dark; ctx.globalAlpha = .22;
-    ctx.fillText('“', W / 2, 400);
+    ctx.fillText('“', W / 2, 220);
     ctx.globalAlpha = 1;
 
-    const { size, lines } = fitQuote(ctx, q.text, '"Bagel Fat One", cursive', 400, 82, 40, 880, 6);
+    const { size, lines } = fitQuote(ctx, q.text, '"Bagel Fat One", cursive', 400, 62, 32, 880, 5);
     ctx.font = `400 ${size}px "Bagel Fat One", cursive`;
     const lineH = size * 1.16;
     const blockH = lines.length * lineH;
-    const startY = H / 2 - blockH / 2 + size * .38;
+    const textTop = 230;
+    const startY = textTop + size * .82;
     ctx.fillStyle = '#4A2740';
     lines.forEach((l, i) => ctx.fillText(l, W / 2, startY + i * lineH, 900));
 
-    try {
-      const cast = CAST_BY_THEME[q.theme] || [];
-      const idx = Math.abs(hashCode(q.id)) % cast.length;
-      const img = await loadImg(cast[idx]);
-      const boxSize = 190;
+    // A little group of Sugar Valley friends, centered, as the poster's visual heart —
+    // not just one mascot in a corner.
+    const stampDieCut = (img, cx, cy, boxSize) => {
       const scale = Math.min(boxSize / img.width, boxSize / img.height);
       const iw = img.width * scale, ih = img.height * scale;
-      const cx = W - 150, cy = H - 210;
       const sil = silhouette(img, iw, ih, '#fff');
       for (let i = 0; i < 16; i++) {
         const a = (Math.PI * 2 * i) / 16;
-        ctx.drawImage(sil, cx - iw / 2 + Math.cos(a) * 8, cy - ih / 2 + Math.sin(a) * 8, iw, ih);
+        ctx.drawImage(sil, cx - iw / 2 + Math.cos(a) * 9, cy - ih / 2 + Math.sin(a) * 9, iw, ih);
       }
       ctx.drawImage(img, cx - iw / 2, cy - ih / 2, iw, ih);
-    } catch (e) { /* mascot art unreachable from this origin; poster still works without it */ }
+    };
+    try {
+      const pool = (CAST_BY_THEME[q.theme] || []).slice();
+      const count = pool.length >= 3 && rnd() > .35 ? 3 : Math.min(2, pool.length);
+      const chosen = [];
+      for (let i = 0; i < count && pool.length; i++) chosen.push(pool.splice(Math.floor(rnd() * pool.length), 1)[0]);
+      const imgs = await Promise.all(chosen.map(loadImg));
+      const groupY = textTop + blockH + 340;
+      if (imgs.length === 3) {
+        stampDieCut(imgs[0], W / 2 - 250, groupY - 20, 260);
+        stampDieCut(imgs[2], W / 2 + 250, groupY - 20, 260);
+        stampDieCut(imgs[1], W / 2, groupY + 30, 320); // center friend stands slightly forward
+      } else {
+        const gap = 190;
+        imgs.forEach((img, i) => stampDieCut(img, W / 2 + (i === 0 ? -gap : gap), groupY, 300));
+      }
+    } catch (e) { /* character art unreachable from this origin; poster still works without it */ }
 
     ctx.font = '800 26px Nunito, sans-serif'; ctx.fillStyle = '#7A5570';
     ctx.fillText('Your Daily Dose of Love & Sweetness', W / 2, H - 60, 700);
