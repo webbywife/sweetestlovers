@@ -128,68 +128,91 @@
     return c;
   }
 
-  /* ---------- the poster: 1080x1350 (portrait, IG/Pinterest-ready) ---------- */
+  /* ---------- the poster: 1080x1350 (portrait, IG/Pinterest-ready) ----------
+     Layout is computed FIRST (text size, character count/positions), so the character
+     group always centers in whatever vertical space is actually left over, instead of
+     sitting at a fixed offset that leaves a growing dead zone for short quotes. Only
+     once every position is known do we draw: background → decoration → text → group → footer. */
   async function drawPoster(q) {
     const W = 1080, H = 1350;
     const canvas = document.createElement('canvas'); canvas.width = W; canvas.height = H;
     const ctx = canvas.getContext('2d');
     const rnd = mulberry32(hashCode(q.id));
+    ctx.textAlign = 'center';
 
+    // 1) quote text layout (measure only — font must be set to measure, but nothing paints yet)
+    const headerBottom = 150;
+    ctx.font = '400 62px "Bagel Fat One", cursive'; // fitQuote resets this per candidate size anyway
+    const { size, lines } = fitQuote(ctx, q.text, '"Bagel Fat One", cursive', 400, 62, 32, 880, 5);
+    const lineH = size * 1.16;
+    const textTop = headerBottom + 60;
+    const textBottom = textTop + size * .82 + (lines.length - 1) * lineH + size * .3;
+
+    // 2) pick 2-3 theme-appropriate characters and lay out the group's footprint
+    const pool = (CAST_BY_THEME[q.theme] || []).slice();
+    const count = pool.length >= 3 && rnd() > .35 ? 3 : Math.min(2, pool.length);
+    const chosen = [];
+    for (let i = 0; i < count && pool.length; i++) chosen.push(pool.splice(Math.floor(rnd() * pool.length), 1)[0]);
+    const footerTop = H - 108;
+    const groupCy = textBottom + (footerTop - textBottom) / 2; // centered in whatever room is left
+    const positions = count === 3
+      ? [{ dx: -250, dy: -40, box: 260 }, { dx: 250, dy: -40, box: 260 }, { dx: 0, dy: 15, box: 320 }]
+      : count === 2
+        ? [{ dx: -190, dy: 0, box: 300 }, { dx: 190, dy: 0, box: 300 }]
+        : [{ dx: 0, dy: 0, box: 320 }];
+    const groupTop = groupCy + Math.min(...positions.map(p => p.dy - p.box / 2));
+    const groupBottom = groupCy + Math.max(...positions.map(p => p.dy + p.box / 2));
+
+    // 3) background + a different little line-art kawaii scene per poster (same seed as
+    // everything else here, so a card's live preview always matches what downloads)
     const grad = ctx.createLinearGradient(0, 0, W, H);
     grad.addColorStop(0, q.light); grad.addColorStop(.45, '#FFF6EA'); grad.addColorStop(1, '#FFF6EA');
     ctx.fillStyle = grad; ctx.fillRect(0, 0, W, H);
 
-    // A different little kawaii scene per poster — same seed as everything else in this
-    // draw, so a card's live preview always matches what actually downloads.
     const PASTELS = ['#FFB3C7', '#FFD0B0', '#A8E6CF', '#BFE5F7', '#D9CCF5'];
     const scene = Math.floor(rnd() * 4); // 0 clouds · 1 stars · 2 rainbow · 3 flowers
-    // keep decorations off the quote text (upper band) and the character group (center band) —
-    // sized to the group's actual footprint, not the whole middle, so the lower third isn't bare
+    const pad = 70;
     const inKeepClear = (x, y) =>
-      (y > H * .10 && y < H * .39) || (y > H * .43 && y < H * .68 && x > W * .12 && x < W * .88);
+      (y > headerBottom && y < textBottom + 20) ||
+      (y > groupTop - pad && y < groupBottom + pad && x > W / 2 - 390 && x < W / 2 + 390);
     const scatter = (n, draw) => {
       for (let i = 0; i < n; i++) {
         let x, y, tries = 0;
-        do { x = rnd() * W; y = rnd() * H * .95; tries++; } while (inKeepClear(x, y) && tries < 6);
+        do { x = rnd() * W; y = 40 + rnd() * (H - 80); tries++; } while (inKeepClear(x, y) && tries < 8);
         draw(x, y, i);
       }
     };
     if (scene === 0) {
-      scatter(7, (x, y) => lineCloud(ctx, x, y, 70 + rnd() * 90, rnd() > .5 ? '#fff' : q.dark, .35 + rnd() * .3));
+      scatter(8, (x, y) => lineCloud(ctx, x, y, 70 + rnd() * 90, rnd() > .5 ? '#fff' : q.dark, .35 + rnd() * .3));
     } else if (scene === 1) {
-      scatter(11, (x, y) => lineStar(ctx, x, y, 20 + rnd() * 26, rnd() > .5 ? '#fff' : q.dark, .4 + rnd() * .35, rnd() * Math.PI));
+      scatter(12, (x, y) => lineStar(ctx, x, y, 20 + rnd() * 26, rnd() > .5 ? '#fff' : q.dark, .4 + rnd() * .35, rnd() * Math.PI));
     } else if (scene === 2) {
       const cx = rnd() > .5 ? 60 : W - 60, cy = 60;
       lineRainbow(ctx, cx, cy, 3.4 + rnd(), PASTELS, .85, cx > W / 2 ? Math.PI / 2 : -Math.PI / 2);
-      scatter(7, (x, y) => lineStar(ctx, x, y, 18 + rnd() * 20, '#fff', .4 + rnd() * .3, rnd() * Math.PI));
+      scatter(8, (x, y) => lineStar(ctx, x, y, 18 + rnd() * 20, '#fff', .4 + rnd() * .3, rnd() * Math.PI));
     } else {
-      scatter(8, (x, y) => lineFlower(ctx, x, y, 40 + rnd() * 34, PASTELS[Math.floor(rnd() * PASTELS.length)], .5 + rnd() * .3, rnd() * Math.PI));
+      scatter(9, (x, y) => lineFlower(ctx, x, y, 40 + rnd() * 34, PASTELS[Math.floor(rnd() * PASTELS.length)], .5 + rnd() * .3, rnd() * Math.PI));
     }
-    scatter(6, (x, y) => lineHeart(ctx, x, y, 16 + rnd() * 18, '#fff', .4 + rnd() * .25, (rnd() - .5) * .6));
+    scatter(7, (x, y) => lineHeart(ctx, x, y, 16 + rnd() * 18, '#fff', .4 + rnd() * .25, (rnd() - .5) * .6));
 
-    ctx.textAlign = 'center';
+    // 4) header + quote text
     ctx.fillStyle = '#fff'; roundRect(ctx, W / 2 - 260, 70, 520, 64, 32); ctx.fill();
     ctx.strokeStyle = '#7A4B45'; ctx.lineWidth = 4; roundRect(ctx, W / 2 - 260, 70, 520, 64, 32); ctx.stroke();
     ctx.fillStyle = q.dark;
     ctx.font = '800 24px Nunito, sans-serif';
     ctx.fillText(`🍪 SUGAR VALLEY · ON ${q.theme.toUpperCase()}`, W / 2, 111, 480);
 
-    ctx.font = '400 120px "Bagel Fat One", cursive';
-    ctx.fillStyle = q.dark; ctx.globalAlpha = .22;
-    ctx.fillText('“', W / 2, 220);
+    ctx.font = '400 110px "Bagel Fat One", cursive';
+    ctx.fillStyle = q.dark; ctx.globalAlpha = .2;
+    ctx.fillText('“', W / 2, textTop + 30);
     ctx.globalAlpha = 1;
 
-    const { size, lines } = fitQuote(ctx, q.text, '"Bagel Fat One", cursive', 400, 62, 32, 880, 5);
     ctx.font = `400 ${size}px "Bagel Fat One", cursive`;
-    const lineH = size * 1.16;
-    const blockH = lines.length * lineH;
-    const textTop = 230;
-    const startY = textTop + size * .82;
     ctx.fillStyle = '#4A2740';
-    lines.forEach((l, i) => ctx.fillText(l, W / 2, startY + i * lineH, 900));
+    const firstBaseline = textTop + size * .82;
+    lines.forEach((l, i) => ctx.fillText(l, W / 2, firstBaseline + i * lineH, 900));
 
-    // A little group of Sugar Valley friends, centered, as the poster's visual heart —
-    // not just one mascot in a corner.
+    // 5) the character group, centered in the leftover space — the poster's visual heart
     const stampDieCut = (img, cx, cy, boxSize) => {
       const scale = Math.min(boxSize / img.width, boxSize / img.height);
       const iw = img.width * scale, ih = img.height * scale;
@@ -201,22 +224,11 @@
       ctx.drawImage(img, cx - iw / 2, cy - ih / 2, iw, ih);
     };
     try {
-      const pool = (CAST_BY_THEME[q.theme] || []).slice();
-      const count = pool.length >= 3 && rnd() > .35 ? 3 : Math.min(2, pool.length);
-      const chosen = [];
-      for (let i = 0; i < count && pool.length; i++) chosen.push(pool.splice(Math.floor(rnd() * pool.length), 1)[0]);
       const imgs = await Promise.all(chosen.map(loadImg));
-      const groupY = textTop + blockH + 340;
-      if (imgs.length === 3) {
-        stampDieCut(imgs[0], W / 2 - 250, groupY - 20, 260);
-        stampDieCut(imgs[2], W / 2 + 250, groupY - 20, 260);
-        stampDieCut(imgs[1], W / 2, groupY + 30, 320); // center friend stands slightly forward
-      } else {
-        const gap = 190;
-        imgs.forEach((img, i) => stampDieCut(img, W / 2 + (i === 0 ? -gap : gap), groupY, 300));
-      }
+      imgs.forEach((img, i) => stampDieCut(img, W / 2 + positions[i].dx, groupCy + positions[i].dy, positions[i].box));
     } catch (e) { /* character art unreachable from this origin; poster still works without it */ }
 
+    // 6) footer
     ctx.font = '800 26px Nunito, sans-serif'; ctx.fillStyle = '#7A5570';
     ctx.fillText('Your Daily Dose of Love & Sweetness', W / 2, H - 60, 700);
     ctx.font = '700 24px Nunito, sans-serif'; ctx.fillStyle = q.dark;
