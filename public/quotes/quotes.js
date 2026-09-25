@@ -140,15 +140,17 @@
     const rnd = mulberry32(hashCode(q.id));
     ctx.textAlign = 'center';
 
-    // 1) quote text layout (measure only — font must be set to measure, but nothing paints yet)
+    // 1) quote text layout — the quote is the poster's headline, so it gets first claim on
+    // size (measure only here; font must be set to measure, but nothing paints yet)
     const headerBottom = 150;
-    ctx.font = '400 62px "Bagel Fat One", cursive'; // fitQuote resets this per candidate size anyway
-    const { size, lines } = fitQuote(ctx, q.text, '"Bagel Fat One", cursive', 400, 62, 32, 880, 5);
+    ctx.font = '400 78px "Bagel Fat One", cursive'; // fitQuote resets this per candidate size anyway
+    const { size, lines } = fitQuote(ctx, q.text, '"Bagel Fat One", cursive', 400, 78, 40, 880, 5);
     const lineH = size * 1.16;
     const textTop = headerBottom + 60;
     const textBottom = textTop + size * .82 + (lines.length - 1) * lineH + size * .3;
 
-    // 2) pick 2-3 theme-appropriate characters and lay out the group's footprint
+    // 2) pick 2-3 theme-appropriate characters — a supporting illustration, sized clearly
+    // smaller than the text so the quote stays the thing you read first
     const pool = (CAST_BY_THEME[q.theme] || []).slice();
     const count = pool.length >= 3 && rnd() > .35 ? 3 : Math.min(2, pool.length);
     const chosen = [];
@@ -156,10 +158,10 @@
     const footerTop = H - 108;
     const groupCy = textBottom + (footerTop - textBottom) / 2; // centered in whatever room is left
     const positions = count === 3
-      ? [{ dx: -250, dy: -40, box: 260 }, { dx: 250, dy: -40, box: 260 }, { dx: 0, dy: 15, box: 320 }]
+      ? [{ dx: -195, dy: -30, box: 200 }, { dx: 195, dy: -30, box: 200 }, { dx: 0, dy: 12, box: 250 }]
       : count === 2
-        ? [{ dx: -190, dy: 0, box: 300 }, { dx: 190, dy: 0, box: 300 }]
-        : [{ dx: 0, dy: 0, box: 320 }];
+        ? [{ dx: -150, dy: 0, box: 235 }, { dx: 150, dy: 0, box: 235 }]
+        : [{ dx: 0, dy: 0, box: 250 }];
     const groupTop = groupCy + Math.min(...positions.map(p => p.dy - p.box / 2));
     const groupBottom = groupCy + Math.max(...positions.map(p => p.dy + p.box / 2));
 
