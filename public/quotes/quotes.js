@@ -53,65 +53,22 @@
     }
     return { size, lines };
   }
-  /* ---------- line-art decoration kit: every background motif is stroke-only, never filled,
-     so it reads as delicate kawaii linework instead of flat clip-art shapes ---------- */
-  function withStroke(ctx, x, y, s, rot, color, alpha, width, draw) {
-    ctx.save(); ctx.globalAlpha = alpha; ctx.translate(x, y); ctx.rotate(rot); ctx.scale(s, s);
-    ctx.strokeStyle = color; ctx.lineWidth = width / s; ctx.lineJoin = 'round'; ctx.lineCap = 'round';
-    draw(ctx); ctx.restore();
+  /* ---------- small filled decorations scattered through the poster's open space ---------- */
+  function fillHeart(ctx, x, y, s, color, alpha = 1) {
+    ctx.save(); ctx.globalAlpha = alpha; ctx.translate(x, y); ctx.scale(s / 24, s / 24); ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.moveTo(12, 21);
+    ctx.bezierCurveTo(5, 15, 1, 11.5, 1, 7); ctx.bezierCurveTo(1, 3.6, 3.7, 1.5, 6.5, 1.5);
+    ctx.bezierCurveTo(9, 1.5, 11, 3, 12, 5); ctx.bezierCurveTo(13, 3, 15, 1.5, 17.5, 1.5);
+    ctx.bezierCurveTo(20.3, 1.5, 23, 3.6, 23, 7); ctx.bezierCurveTo(23, 11.5, 19, 15, 12, 21);
+    ctx.closePath(); ctx.fill(); ctx.restore();
   }
-  function lineHeart(ctx, x, y, s, color, alpha = 1, rot = 0) {
-    withStroke(ctx, x, y, s / 24, rot, color, alpha, 6, c => {
-      c.beginPath(); c.moveTo(12, 21);
-      c.bezierCurveTo(5, 15, 1, 11.5, 1, 7); c.bezierCurveTo(1, 3.6, 3.7, 1.5, 6.5, 1.5);
-      c.bezierCurveTo(9, 1.5, 11, 3, 12, 5); c.bezierCurveTo(13, 3, 15, 1.5, 17.5, 1.5);
-      c.bezierCurveTo(20.3, 1.5, 23, 3.6, 23, 7); c.bezierCurveTo(23, 11.5, 19, 15, 12, 21);
-      c.closePath(); c.stroke();
-    });
-  }
-  function lineStar(ctx, x, y, s, color, alpha = 1, rot = 0) {
-    withStroke(ctx, x, y, s / 24, rot, color, alpha, 5.5, c => {
-      c.beginPath();
-      for (let i = 0; i < 10; i++) {
-        const a = (Math.PI / 5) * i - Math.PI / 2, r = i % 2 === 0 ? 12 : 5;
-        const px = 12 + Math.cos(a) * r, py = 12 + Math.sin(a) * r;
-        i === 0 ? c.moveTo(px, py) : c.lineTo(px, py);
-      }
-      c.closePath(); c.stroke();
-    });
-  }
-  function lineCloud(ctx, x, y, s, color, alpha = 1, rot = 0) {
-    withStroke(ctx, x, y, s / 60, rot, color, alpha, 3.2, c => {
-      c.beginPath();
-      c.moveTo(10, 42);
-      c.bezierCurveTo(-4, 42, -4, 22, 10, 21);
-      c.bezierCurveTo(11, 8, 30, 6, 36, 17);
-      c.bezierCurveTo(48, 12, 60, 22, 54, 33);
-      c.bezierCurveTo(62, 34, 62, 44, 52, 44);
-      c.lineTo(10, 44); c.closePath(); c.stroke();
-    });
-  }
-  function lineRainbow(ctx, x, y, s, colors, alpha = 1, rot = 0) {
-    ctx.save(); ctx.globalAlpha = alpha; ctx.translate(x, y); ctx.rotate(rot); ctx.scale(s / 100, s / 100);
-    ctx.lineCap = 'round';
-    colors.forEach((c, i) => {
-      const r = Math.max(4, 40 - i * 8); // must stay positive — arc() throws on r <= 0
-      ctx.beginPath();
-      ctx.strokeStyle = c; ctx.lineWidth = 7;
-      ctx.arc(0, 0, r, Math.PI, 2 * Math.PI);
-      ctx.stroke();
-    });
-    ctx.restore();
-  }
-  function lineFlower(ctx, x, y, s, color, alpha = 1, rot = 0) {
-    withStroke(ctx, x, y, s / 30, rot, color, alpha, 3, c => {
-      for (let i = 0; i < 6; i++) {
-        c.save(); c.rotate((Math.PI / 3) * i);
-        c.beginPath(); c.ellipse(0, -10, 6, 10, 0, 0, Math.PI * 2); c.stroke();
-        c.restore();
-      }
-      c.beginPath(); c.arc(0, 0, 4, 0, Math.PI * 2); c.stroke();
-    });
+  function fillSpark(ctx, x, y, s, color, alpha = 1) {
+    ctx.save(); ctx.globalAlpha = alpha; ctx.translate(x, y); ctx.scale(s / 20, s / 20); ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.moveTo(10, 0); ctx.bezierCurveTo(11, 6, 14, 9, 20, 10); ctx.bezierCurveTo(14, 11, 11, 14, 10, 20);
+    ctx.bezierCurveTo(9, 14, 6, 11, 0, 10); ctx.bezierCurveTo(6, 9, 9, 6, 10, 0);
+    ctx.closePath(); ctx.fill(); ctx.restore();
   }
   function mulberry32(seed) {
     let a = seed >>> 0;
@@ -141,120 +98,70 @@
     const rnd = mulberry32(hashCode(q.id));
     ctx.textAlign = 'center';
 
-    // 1) quote text — the headline, top-anchored, clean (nothing overlaps it)
-    const headerBottom = 150, footerTop = H - 100;
-    const dividerY = headerBottom + 34;
-    const textTop = dividerY + 90;
-    ctx.font = '400 74px "Bagel Fat One", cursive'; // fitQuote resets this per candidate size anyway
-    const { size, lines } = fitQuote(ctx, q.text, '"Bagel Fat One", cursive', 400, 74, 38, 860, 5);
-    const lineH = size * 1.16;
-    const textBottom = textTop + size * .82 + (lines.length - 1) * lineH + size * .3;
-
-    // 2) the illustrated stage: everything from the divider-under-the-quote down to the
-    // footer is ONE composed scene — a ground platform under 2-3 theme-matched characters,
-    // with scenery concentrated around them so the zone reads as full, not empty
-    const stageDividerY = textBottom + 46;
-    const stageTop = stageDividerY + 40;
-    const pool = (CAST_BY_THEME[q.theme] || []).slice();
-    const count = pool.length >= 3 && rnd() > .35 ? 3 : Math.min(2, pool.length);
-    const chosen = [];
-    for (let i = 0; i < count && pool.length; i++) chosen.push(pool.splice(Math.floor(rnd() * pool.length), 1)[0]);
-    const positions = count === 3
-      ? [{ dx: -220, dy: 10, box: 230 }, { dx: 220, dy: 10, box: 230 }, { dx: 0, dy: -25, box: 290 }]
-      : count === 2
-        ? [{ dx: -170, dy: 0, box: 270 }, { dx: 170, dy: 0, box: 270 }]
-        : [{ dx: 0, dy: 0, box: 290 }];
-    const platformW = Math.max(...positions.map(p => Math.abs(p.dx))) * 2 + 260;
-    const platformH = 60;
-    // the platform's vertical center sits right at the characters' feet line, so its top
-    // half is hidden behind their legs (grounded) and its bottom half shows as a stage lip
-    const feetOffset = Math.max(...positions.map(p => p.dy + p.box / 2));
-    const topOffset = Math.min(...positions.map(p => p.dy - p.box / 2));
-    const relTop = topOffset, relBottom = feetOffset + platformH / 2;
-    const available = footerTop - stageTop;
-    const platformCy = stageTop + Math.max(20, (available - (relBottom - relTop)) / 2) - relTop;
-
-    // 3) background
+    // 1) background — diagonal wash from the theme's light tone into warm cream
     const grad = ctx.createLinearGradient(0, 0, W, H);
-    grad.addColorStop(0, q.light); grad.addColorStop(.4, '#FFF6EA'); grad.addColorStop(1, '#FFF6EA');
+    grad.addColorStop(0, q.light); grad.addColorStop(.55, '#FFF6EA'); grad.addColorStop(1, '#FFF6EA');
     ctx.fillStyle = grad; ctx.fillRect(0, 0, W, H);
 
-    // decoration lives ONLY inside the stage zone now, clustered around the platform so
-    // the illustration reads as one full scene instead of scattered confetti
-    const PASTELS = ['#FFB3C7', '#FFD0B0', '#A8E6CF', '#BFE5F7', '#D9CCF5'];
-    const scene = Math.floor(rnd() * 4); // 0 clouds · 1 stars · 2 rainbow · 3 flowers
-    const stageInClear = (x, y) =>
-      y > platformCy + topOffset - 30 && y < platformCy + feetOffset + platformH / 2 + 30 &&
-      x > W / 2 - platformW / 2 - 40 && x < W / 2 + platformW / 2 + 40;
-    const scatterStage = (n, draw) => {
-      for (let i = 0; i < n; i++) {
-        let x, y, tries = 0;
-        do {
-          x = W / 2 + (rnd() - .5) * (platformW + 420);
-          y = stageTop + rnd() * (footerTop - stageTop - 20);
-          tries++;
-        } while (stageInClear(x, y) && tries < 8);
-        draw(x, y, i);
-      }
-    };
-    if (scene === 0) {
-      scatterStage(9, (x, y) => lineCloud(ctx, x, y, 65 + rnd() * 80, rnd() > .5 ? '#fff' : q.dark, .4 + rnd() * .3));
-    } else if (scene === 1) {
-      scatterStage(13, (x, y) => lineStar(ctx, x, y, 18 + rnd() * 24, rnd() > .5 ? '#fff' : q.dark, .45 + rnd() * .35, rnd() * Math.PI));
-    } else if (scene === 2) {
-      lineRainbow(ctx, W / 2, stageTop - 10, 3.6 + rnd() * .6, PASTELS, .9, 0);
-      scatterStage(8, (x, y) => lineStar(ctx, x, y, 16 + rnd() * 18, '#fff', .4 + rnd() * .3, rnd() * Math.PI));
-    } else {
-      scatterStage(10, (x, y) => lineFlower(ctx, x, y, 36 + rnd() * 30, PASTELS[Math.floor(rnd() * PASTELS.length)], .55 + rnd() * .3, rnd() * Math.PI));
-    }
-    scatterStage(8, (x, y) => lineHeart(ctx, x, y, 15 + rnd() * 16, '#fff', .45 + rnd() * .25, (rnd() - .5) * .6));
-
-    // a couple of quiet accents up in the headline zone too, so it isn't bare
-    lineHeart(ctx, W / 2, dividerY - 120, 20, q.dark, .18, 0);
-
-    // 4) the ground platform + character group — one composed little scene
-    ctx.save();
-    ctx.globalAlpha = .9;
-    ctx.fillStyle = q.light;
-    roundRect(ctx, W / 2 - platformW / 2, platformCy + feetOffset - platformH / 2, platformW, platformH, platformH / 2);
-    ctx.fill();
-    ctx.restore();
-
-    const stampDieCut = (img, cx, cy, boxSize) => {
-      const scale = Math.min(boxSize / img.width, boxSize / img.height);
-      const iw = img.width * scale, ih = img.height * scale;
-      const sil = silhouette(img, iw, ih, '#fff');
-      for (let i = 0; i < 16; i++) {
-        const a = (Math.PI * 2 * i) / 16;
-        ctx.drawImage(sil, cx - iw / 2 + Math.cos(a) * 9, cy - ih / 2 + Math.sin(a) * 9, iw, ih);
-      }
-      ctx.drawImage(img, cx - iw / 2, cy - ih / 2, iw, ih);
-    };
-    try {
-      const imgs = await Promise.all(chosen.map(loadImg));
-      imgs.forEach((img, i) => stampDieCut(img, W / 2 + positions[i].dx, platformCy + positions[i].dy, positions[i].box));
-    } catch (e) { /* character art unreachable from this origin; poster still works without it */ }
-
-    // 5) header pill + heart divider + quote headline
+    // 2) header pill
     ctx.fillStyle = '#fff'; roundRect(ctx, W / 2 - 260, 70, 520, 64, 32); ctx.fill();
     ctx.strokeStyle = '#7A4B45'; ctx.lineWidth = 4; roundRect(ctx, W / 2 - 260, 70, 520, 64, 32); ctx.stroke();
     ctx.fillStyle = q.dark;
     ctx.font = '800 24px Nunito, sans-serif';
     ctx.fillText(`🍪 SUGAR VALLEY · ON ${q.theme.toUpperCase()}`, W / 2, 111, 480);
-    lineHeart(ctx, W / 2, dividerY, 22, q.dark, .55, 0);
 
+    // 3) a soft decorative opening-quote mark
+    ctx.font = '400 150px "Bagel Fat One", cursive';
+    ctx.fillStyle = q.dark; ctx.globalAlpha = .22;
+    ctx.fillText('“', W / 2, 300);
+    ctx.globalAlpha = 1;
+
+    // 4) the quote — vertically centered in the open zone below the quote mark and above
+    // the corner mascot, since it's the one thing on the page that should draw the eye
+    const zoneTop = 400, zoneBottom = H * .66;
+    ctx.font = '400 74px "Bagel Fat One", cursive'; // fitQuote resets this per candidate size anyway
+    const { size, lines } = fitQuote(ctx, q.text, '"Bagel Fat One", cursive', 400, 74, 38, 820, 5);
+    const lineH = size * 1.16;
+    const textH = size * .82 + (lines.length - 1) * lineH + size * .3;
+    const textTop = zoneTop + Math.max(0, ((zoneBottom - zoneTop) - textH) / 2);
+    const textBottom = textTop + textH;
     ctx.font = `400 ${size}px "Bagel Fat One", cursive`;
     ctx.fillStyle = '#4A2740';
     const firstBaseline = textTop + size * .82;
     lines.forEach((l, i) => ctx.fillText(l, W / 2, firstBaseline + i * lineH, 900));
 
-    // 6) the divider between quote and illustration — a thin line with a heart at center,
-    // echoing the reference's "headline / body" separator
-    ctx.strokeStyle = q.dark; ctx.globalAlpha = .35; ctx.lineWidth = 2.5;
-    ctx.beginPath(); ctx.moveTo(W / 2 - 220, stageDividerY); ctx.lineTo(W / 2 - 24, stageDividerY); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(W / 2 + 24, stageDividerY); ctx.lineTo(W / 2 + 220, stageDividerY); ctx.stroke();
-    ctx.globalAlpha = 1;
-    lineHeart(ctx, W / 2, stageDividerY - 6, 20, q.dark, .7, 0);
+    // 5) one small die-cut mascot tucked in the bottom-right corner
+    const charCx = W * .865, charCy = H * .83, charBox = 230;
+    const pool = CAST_BY_THEME[q.theme] || [];
+    const charSrc = pool.length ? pool[Math.floor(rnd() * pool.length)] : null;
+
+    // 6) sparkles + hearts scattered through the open space, clear of the pill/quote/text/mascot
+    const clear = (x, y) =>
+      (y > 60 && y < 150 && x > W / 2 - 280 && x < W / 2 + 280) ||
+      (y > 180 && y < 340 && x > W / 2 - 150 && x < W / 2 + 150) ||
+      (y > textTop - 30 && y < textBottom + 30 && x > W / 2 - 460 && x < W / 2 + 460) ||
+      (y > charCy - charBox * .6 && y < charCy + charBox * .65 && x > charCx - charBox * .6 && x < charCx + charBox * .6);
+    for (let i = 0; i < 16; i++) {
+      let x, y, tries = 0;
+      do { x = rnd() * W; y = rnd() * H; tries++; } while (clear(x, y) && tries < 10);
+      if (i % 2 === 0) fillHeart(ctx, x, y, 14 + rnd() * 14, '#fff', .35 + rnd() * .25);
+      else fillSpark(ctx, x, y, 12 + rnd() * 16, q.dark, .28 + rnd() * .25);
+    }
+
+    // mascot drawn last so it sits on top of any nearby decoration
+    if (charSrc) {
+      try {
+        const img = await loadImg(charSrc);
+        const scale = Math.min(charBox / img.width, charBox / img.height);
+        const iw = img.width * scale, ih = img.height * scale;
+        const sil = silhouette(img, iw, ih, '#fff');
+        for (let i = 0; i < 16; i++) {
+          const a = (Math.PI * 2 * i) / 16;
+          ctx.drawImage(sil, charCx - iw / 2 + Math.cos(a) * 9, charCy - ih / 2 + Math.sin(a) * 9, iw, ih);
+        }
+        ctx.drawImage(img, charCx - iw / 2, charCy - ih / 2, iw, ih);
+      } catch (e) { /* character art unreachable from this origin; poster still works without it */ }
+    }
 
     // 7) footer
     ctx.font = '800 26px Nunito, sans-serif'; ctx.fillStyle = '#7A5570';
