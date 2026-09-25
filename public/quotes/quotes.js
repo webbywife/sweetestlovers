@@ -144,7 +144,7 @@
     // 1) quote text — the headline, top-anchored, clean (nothing overlaps it)
     const headerBottom = 150, footerTop = H - 100;
     const dividerY = headerBottom + 34;
-    const textTop = dividerY + 50;
+    const textTop = dividerY + 90;
     ctx.font = '400 74px "Bagel Fat One", cursive'; // fitQuote resets this per candidate size anyway
     const { size, lines } = fitQuote(ctx, q.text, '"Bagel Fat One", cursive', 400, 74, 38, 860, 5);
     const lineH = size * 1.16;
