@@ -189,6 +189,16 @@
     return () => { a |= 0; a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
   }
 
+  if (window.SugarShare) {
+    SugarShare.mount($('.qactions'), {
+      getCanvas: () => drawCard(current),
+      filename: `${P.slug}-sugar-valley.png`,
+      title: P.name,
+      text: `Meet ${P.name} 🍪 #SugarValley #TheSweetestBakeOff`,
+      pageUrl: `${location.origin}${location.pathname}#${P.slug}`,
+    });
+  }
+
   const dlBtn = $('.qbtn.dl');
   dlBtn.addEventListener('click', async () => {
     dlBtn.classList.add('busy'); dlBtn.querySelector('.txt').textContent = 'Preparing…';

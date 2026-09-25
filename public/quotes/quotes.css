@@ -41,6 +41,8 @@ body.sheet { background-image: radial-gradient(circle, rgba(122, 75, 69, .06) 2.
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 22px; padding: 24px 0 80px; }
 .qcard { position: relative; display: flex; flex-direction: column; border-radius: 24px; border: 4px solid #fff; outline: 3px solid var(--cocoa); background: linear-gradient(160deg, #fff 0%, var(--light) 120%); padding: 22px 20px 18px; box-shadow: 0 8px 0 rgba(122, 75, 69, .14); transition: transform .2s; min-height: 210px; }
 .qcard:hover { transform: translateY(-5px) rotate(-.5deg); }
+.qcard.pulse { animation: cardPulse 1.1s ease 2; }
+@keyframes cardPulse { 0%, 100% { outline-color: var(--cocoa); } 50% { outline-color: var(--dark); outline-width: 5px; } }
 .qcard .preview { position: relative; aspect-ratio: 4 / 5; margin: -22px -20px 14px; border-radius: 20px 20px 0 0; overflow: hidden; display: grid; place-items: center; }
 .qcard .preview img { width: 100%; height: 100%; object-fit: cover; animation: previewIn .3s ease; }
 .qcard .preview .loading { font: 800 .78rem/1.4 var(--body); color: var(--dark); opacity: .6; }
@@ -55,6 +57,14 @@ body.sheet { background-image: radial-gradient(circle, rgba(122, 75, 69, .06) 2.
 .qbtn:hover { transform: translateY(-2px); background: var(--light); }
 .qbtn svg { width: 13px; height: 13px; }
 .qbtn.done { background: var(--mint); border-color: var(--mint-deep); }
+
+/* social-share plugin (story/share.js) */
+.share-row { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+.sbtn { display: inline-flex; align-items: center; justify-content: center; gap: 5px; width: 32px; height: 32px; padding: 0; border-radius: 999px; border: 2px solid var(--cocoa); background: #fff; color: var(--ink); cursor: pointer; text-decoration: none; transition: transform .15s, background .15s; }
+.sbtn:hover { transform: translateY(-2px) scale(1.06); background: var(--light); }
+.sbtn.native { width: auto; padding: 0 12px; gap: 6px; background: var(--pink); }
+.sbtn .si { width: 15px; height: 15px; }
+.sbtn .stxt { font: 800 .76rem/1 var(--body); }
 
 .foot { text-align: center; padding: 20px 20px 60px; color: var(--ink-soft); font-weight: 700; font-size: .88rem; }
 .foot .wordmark { display: inline-block; margin-top: 8px; font-family: var(--display); color: var(--pink-deep); font-size: 1.1rem; }

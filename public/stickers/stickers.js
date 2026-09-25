@@ -115,6 +115,12 @@
     return canvas;
   }
 
+  const stickerCache = new Map();
+  function getOrDrawSticker(entry) {
+    if (!stickerCache.has(entry.slug)) stickerCache.set(entry.slug, drawOneSticker(entry));
+    return stickerCache.get(entry.slug);
+  }
+
   async function downloadCanvas(canvas, filename) {
     return new Promise(resolve => {
       canvas.toBlob(blob => {
@@ -127,14 +133,15 @@
     });
   }
 
-  $$('.dl').forEach(btn => {
+  $$('.sticker').forEach(card => {
+    const slug = card.dataset.slug;
+    const entry = CAST.find(c => c.slug === slug);
+    if (!entry) return;
+    const btn = $('.dl', card);
     btn.addEventListener('click', async () => {
-      const slug = btn.closest('.sticker').dataset.slug;
-      const entry = CAST.find(c => c.slug === slug);
-      if (!entry) return;
       btn.classList.add('busy'); btn.querySelector('.txt').textContent = 'Making…';
       try {
-        const canvas = await drawOneSticker(entry);
+        const canvas = await getOrDrawSticker(entry);
         await downloadCanvas(canvas, `${slug}-sugar-valley-sticker.png`);
         btn.classList.add('done'); btn.querySelector('.txt').textContent = 'Saved! ✓';
       } catch (e) {
@@ -144,6 +151,15 @@
         setTimeout(() => { btn.classList.remove('done'); btn.querySelector('.txt').textContent = 'Download'; }, 2200);
       }
     });
+    if (window.SugarShare) {
+      SugarShare.mount(card, {
+        getCanvas: () => getOrDrawSticker(entry),
+        filename: `${slug}-sugar-valley-sticker.png`,
+        title: entry.name,
+        text: `${entry.name} 🍪 #SugarValley #TheSweetestBakeOff`,
+        pageUrl: `${location.origin}${location.pathname}#${slug}`,
+      });
+    }
   });
 
   /* ---------- the full-cast poster ---------- */

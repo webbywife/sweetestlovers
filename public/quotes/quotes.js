@@ -53,21 +53,65 @@
     }
     return { size, lines };
   }
-  function heart(ctx, x, y, s, color, alpha = 1) {
-    ctx.save(); ctx.globalAlpha = alpha; ctx.translate(x, y); ctx.scale(s / 24, s / 24); ctx.fillStyle = color;
-    ctx.beginPath();
-    ctx.moveTo(12, 21);
-    ctx.bezierCurveTo(5, 15, 1, 11.5, 1, 7); ctx.bezierCurveTo(1, 3.6, 3.7, 1.5, 6.5, 1.5);
-    ctx.bezierCurveTo(9, 1.5, 11, 3, 12, 5); ctx.bezierCurveTo(13, 3, 15, 1.5, 17.5, 1.5);
-    ctx.bezierCurveTo(20.3, 1.5, 23, 3.6, 23, 7); ctx.bezierCurveTo(23, 11.5, 19, 15, 12, 21);
-    ctx.closePath(); ctx.fill(); ctx.restore();
+  /* ---------- line-art decoration kit: every background motif is stroke-only, never filled,
+     so it reads as delicate kawaii linework instead of flat clip-art shapes ---------- */
+  function withStroke(ctx, x, y, s, rot, color, alpha, width, draw) {
+    ctx.save(); ctx.globalAlpha = alpha; ctx.translate(x, y); ctx.rotate(rot); ctx.scale(s, s);
+    ctx.strokeStyle = color; ctx.lineWidth = width / s; ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+    draw(ctx); ctx.restore();
   }
-  function spark(ctx, x, y, s, color, alpha = 1) {
-    ctx.save(); ctx.globalAlpha = alpha; ctx.translate(x, y); ctx.scale(s / 20, s / 20); ctx.fillStyle = color;
-    ctx.beginPath();
-    ctx.moveTo(10, 0); ctx.bezierCurveTo(11, 6, 14, 9, 20, 10); ctx.bezierCurveTo(14, 11, 11, 14, 10, 20);
-    ctx.bezierCurveTo(9, 14, 6, 11, 0, 10); ctx.bezierCurveTo(6, 9, 9, 6, 10, 0);
-    ctx.closePath(); ctx.fill(); ctx.restore();
+  function lineHeart(ctx, x, y, s, color, alpha = 1, rot = 0) {
+    withStroke(ctx, x, y, s / 24, rot, color, alpha, 6, c => {
+      c.beginPath(); c.moveTo(12, 21);
+      c.bezierCurveTo(5, 15, 1, 11.5, 1, 7); c.bezierCurveTo(1, 3.6, 3.7, 1.5, 6.5, 1.5);
+      c.bezierCurveTo(9, 1.5, 11, 3, 12, 5); c.bezierCurveTo(13, 3, 15, 1.5, 17.5, 1.5);
+      c.bezierCurveTo(20.3, 1.5, 23, 3.6, 23, 7); c.bezierCurveTo(23, 11.5, 19, 15, 12, 21);
+      c.closePath(); c.stroke();
+    });
+  }
+  function lineStar(ctx, x, y, s, color, alpha = 1, rot = 0) {
+    withStroke(ctx, x, y, s / 24, rot, color, alpha, 5.5, c => {
+      c.beginPath();
+      for (let i = 0; i < 10; i++) {
+        const a = (Math.PI / 5) * i - Math.PI / 2, r = i % 2 === 0 ? 12 : 5;
+        const px = 12 + Math.cos(a) * r, py = 12 + Math.sin(a) * r;
+        i === 0 ? c.moveTo(px, py) : c.lineTo(px, py);
+      }
+      c.closePath(); c.stroke();
+    });
+  }
+  function lineCloud(ctx, x, y, s, color, alpha = 1, rot = 0) {
+    withStroke(ctx, x, y, s / 60, rot, color, alpha, 3.2, c => {
+      c.beginPath();
+      c.moveTo(10, 42);
+      c.bezierCurveTo(-4, 42, -4, 22, 10, 21);
+      c.bezierCurveTo(11, 8, 30, 6, 36, 17);
+      c.bezierCurveTo(48, 12, 60, 22, 54, 33);
+      c.bezierCurveTo(62, 34, 62, 44, 52, 44);
+      c.lineTo(10, 44); c.closePath(); c.stroke();
+    });
+  }
+  function lineRainbow(ctx, x, y, s, colors, alpha = 1, rot = 0) {
+    ctx.save(); ctx.globalAlpha = alpha; ctx.translate(x, y); ctx.rotate(rot); ctx.scale(s / 100, s / 100);
+    ctx.lineCap = 'round';
+    colors.forEach((c, i) => {
+      const r = Math.max(4, 40 - i * 8); // must stay positive — arc() throws on r <= 0
+      ctx.beginPath();
+      ctx.strokeStyle = c; ctx.lineWidth = 7;
+      ctx.arc(0, 0, r, Math.PI, 2 * Math.PI);
+      ctx.stroke();
+    });
+    ctx.restore();
+  }
+  function lineFlower(ctx, x, y, s, color, alpha = 1, rot = 0) {
+    withStroke(ctx, x, y, s / 30, rot, color, alpha, 3, c => {
+      for (let i = 0; i < 6; i++) {
+        c.save(); c.rotate((Math.PI / 3) * i);
+        c.beginPath(); c.ellipse(0, -10, 6, 10, 0, 0, Math.PI * 2); c.stroke();
+        c.restore();
+      }
+      c.beginPath(); c.arc(0, 0, 4, 0, Math.PI * 2); c.stroke();
+    });
   }
   function mulberry32(seed) {
     let a = seed >>> 0;
@@ -95,11 +139,30 @@
     grad.addColorStop(0, q.light); grad.addColorStop(.45, '#FFF6EA'); grad.addColorStop(1, '#FFF6EA');
     ctx.fillStyle = grad; ctx.fillRect(0, 0, W, H);
 
-    for (let i = 0; i < 20; i++) {
-      const x = rnd() * W, y = rnd() * H * .62;
-      if (i % 2) heart(ctx, x, y, 18 + rnd() * 20, '#fff', .55);
-      else spark(ctx, x, y, 16 + rnd() * 18, q.dark, .3);
+    // A different little kawaii scene per poster — same seed as everything else in this
+    // draw, so a card's live preview always matches what actually downloads.
+    const PASTELS = ['#FFB3C7', '#FFD0B0', '#A8E6CF', '#BFE5F7', '#D9CCF5'];
+    const scene = Math.floor(rnd() * 4); // 0 clouds · 1 stars · 2 rainbow · 3 flowers
+    const inText = (x, y) => x > W * .12 && x < W * .88 && y > H * .32 && y < H * .68;
+    const scatter = (n, draw) => {
+      for (let i = 0; i < n; i++) {
+        let x, y, tries = 0;
+        do { x = rnd() * W; y = rnd() * H * .82; tries++; } while (inText(x, y) && tries < 6);
+        draw(x, y, i);
+      }
+    };
+    if (scene === 0) {
+      scatter(6, (x, y) => lineCloud(ctx, x, y, 70 + rnd() * 90, rnd() > .5 ? '#fff' : q.dark, .35 + rnd() * .3));
+    } else if (scene === 1) {
+      scatter(9, (x, y) => lineStar(ctx, x, y, 20 + rnd() * 26, rnd() > .5 ? '#fff' : q.dark, .4 + rnd() * .35, rnd() * Math.PI));
+    } else if (scene === 2) {
+      const cx = rnd() > .5 ? 60 : W - 60, cy = 60;
+      lineRainbow(ctx, cx, cy, 3.4 + rnd(), PASTELS, .85, cx > W / 2 ? Math.PI / 2 : -Math.PI / 2);
+      scatter(6, (x, y) => lineStar(ctx, x, y, 18 + rnd() * 20, '#fff', .4 + rnd() * .3, rnd() * Math.PI));
+    } else {
+      scatter(7, (x, y) => lineFlower(ctx, x, y, 40 + rnd() * 34, PASTELS[Math.floor(rnd() * PASTELS.length)], .5 + rnd() * .3, rnd() * Math.PI));
     }
+    scatter(4, (x, y) => lineHeart(ctx, x, y, 16 + rnd() * 18, '#fff', .4 + rnd() * .25, (rnd() - .5) * .6));
 
     ctx.textAlign = 'center';
     ctx.fillStyle = '#fff'; roundRect(ctx, W / 2 - 260, 70, 520, 64, 32); ctx.fill();
@@ -208,5 +271,29 @@
       cp.classList.add('done'); cp.querySelector('.txt').textContent = 'Copied!';
       setTimeout(() => { cp.classList.remove('done'); cp.querySelector('.txt').textContent = 'Copy caption'; }, 1800);
     });
+
+    if (window.SugarShare) {
+      const pageUrl = `${location.origin}${location.pathname}#${q.id}`;
+      SugarShare.mount($('.actions', card), {
+        getCanvas: () => getOrDrawPoster(q),
+        filename: `sugar-valley-${q.id}.png`,
+        title: 'Sugar Valley',
+        text: `"${q.text}" 🍪 #SugarValley ${q.tag} #TheSweetestBakeOff`,
+        pageUrl,
+      });
+    }
   });
+
+  /* a shared link (#quote-id) scrolls to and briefly highlights that card */
+  if (location.hash) {
+    const target = document.querySelector(`.qcard[data-id="${location.hash.slice(1)}"]`);
+    if (target) {
+      target.hidden = false;
+      setTimeout(() => {
+        target.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        target.classList.add('pulse');
+        setTimeout(() => target.classList.remove('pulse'), 2200);
+      }, 300);
+    }
+  }
 })();

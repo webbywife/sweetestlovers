@@ -63,6 +63,14 @@ body.sheet { background-image: radial-gradient(circle, rgba(122, 75, 69, .06) 2.
 .dl svg { width: 14px; height: 14px; }
 .dl.done { background: var(--mint); border-color: var(--mint-deep); }
 
+/* social-share plugin (story/share.js) */
+.share-row { display: flex; gap: 6px; margin-top: 8px; justify-content: center; flex-wrap: wrap; }
+.sbtn { display: inline-flex; align-items: center; justify-content: center; gap: 5px; width: 30px; height: 30px; padding: 0; border-radius: 999px; border: 2px solid var(--cocoa); background: #fff; color: var(--ink); cursor: pointer; text-decoration: none; transition: transform .15s, background .15s; }
+.sbtn:hover { transform: translateY(-2px) scale(1.06); background: var(--tone-soft, var(--pink-soft)); }
+.sbtn.native { width: auto; padding: 0 12px; gap: 6px; background: var(--pink); }
+.sbtn .si { width: 14px; height: 14px; }
+.sbtn .stxt { font: 800 .74rem/1 var(--body); }
+
 .foot { text-align: center; padding: 20px 20px 60px; color: var(--ink-soft); font-weight: 700; font-size: .88rem; }
 .foot .wordmark { display: inline-block; margin-top: 8px; font-family: var(--display); color: var(--pink-deep); font-size: 1.1rem; }
 
